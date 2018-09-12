@@ -1,0 +1,6 @@
+opam init -n --comp=4.02.3 -j 4
+opam repo add coq-released http://coq.inria.fr/opam/released
+opam install coq.8.8.0 
+opam pin add coq 8.8.0
+opam repo add FP https://gitlab.mpi-sws.org/FP/opam-dev.git 
+opam install coq-autosubst

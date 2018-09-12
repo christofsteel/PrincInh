@@ -1,0 +1,14 @@
+-Q PrincInh PrincInh
+
+PrincInh/Utils.v
+PrincInh/Terms.v
+PrincInh/Terms2.v
+PrincInh/TypesCommon.v
+PrincInh/TypesType.v
+PrincInh/TypesProp.v
+PrincInh/NFTerms.v
+PrincInh/Long.v
+PrincInh/Filtr.v
+PrincInh/Paths.v
+PrincInh/SfC.v
+PrincInh/Princ.v
