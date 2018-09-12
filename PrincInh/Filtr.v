@@ -15,7 +15,6 @@ Import EqNotations.
 
 Inductive TD (Gamma : list type) : forall (m : term) (tau : type), ty_T Gamma m tau -> type -> Type :=
  | TD_refl m tau : forall (proof : ty_T Gamma m tau), TD Gamma m tau proof tau
-(* | TD_var Gamma x tau => forall (eqproof : (Gamma x = Some tau)), TD Gamma (! x) tau (Ty_Var x tau eqproof) tau *)
  | TD_lam s sigma tau :
    forall (tau' : type) (innerproof : ty_T (sigma :: Gamma) s tau),
      TD (sigma :: Gamma) s tau innerproof tau'
@@ -202,9 +201,6 @@ Proof.
   rewrite nth_error_nil in H0.
   ainv.
 Qed.
-
-(* Lemma not_in_td : forall tau rho m (D : ty_T [] m rho), ~ (In tau TD_f D) -> {}
- *)
 
 Lemma vierzehn : forall m rho (D : ty_T [] m rho) sigma tau, subformula (sigma ~> tau) rho -> (TD_b D tau = false) ->  princ rho m -> False.
 Proof.

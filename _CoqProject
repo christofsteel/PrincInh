@@ -1,6 +1,7 @@
 -Q PrincInh PrincInh
 
 PrincInh/Utils.v
+PrincInh/Terms.v
 PrincInh/TypesCommon.v
 PrincInh/TypesType.v
 PrincInh/TypesProp.v

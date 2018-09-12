@@ -51,15 +51,6 @@ Proof.
   assumption.
 Qed.
 
- (*
-Inductive ty_deriv_of (Gamma : var -> option type) : forall (m: term) (tau : type), ty Gamma m tau -> Type :=
-| TyDeriv_Var x A proof : ty_deriv_of Gamma (Var x) A (Ty_Var Gamma x A proof).
-| TyDeriv_Lam s A B proof : ty (Some A .: Gamma) s B ->
-        ty Gamma (Lam s) (Arr A B)
-| TyDeriv_App s t A B : ty Gamma s (Arr A B) -> ty Gamma t A ->
-        ty Gamma (App s t) B.
- *)
-
 Lemma generation_app : forall s t tau Gamma, ty Gamma (s@t) tau ->
                         exists sigma, ty Gamma s (sigma ~> tau)
                                    /\ ty Gamma t (sigma).
@@ -87,33 +78,6 @@ Proof.
   ainv.
 Qed.
   
-(*
-Inductive tyty :=
-| TytyVar (Gamma : var -> option type) (x : var) (A : type)
-| TytyLam (Gamma : var -> option type) (m : term) (A : type) (B : type) (proofm : tyty)
-| TytyAbs (Gamma : var -> option type) (p : term) (q : term) (A : type) (proofp : tyty) (proofq : tyty)
-.
-
-Inductive tyty2 (Gamma : var -> option type) :=
-| TytyVar2 (x : var) (A : type)
-| TytyLam2 (m : term) (A : type) (B : type) (proofm : tyty2 (Some A .: Gamma))
-| TytyAbs2 (p : term) (q : term) (A : type) (proofp : tyty2 Gamma) (proofq : tyty2 Gamma)
-.
-
-Fixpoint Checktyty (Gamma: var -> option type) (proof: tyty2 Gamma ) : bool :=
-  match proof with
-  | TytyVar2 _ x A => true
-  | TytyLam2 _ m A B proofm => Checktyty Gamma proofm
-  | TytyAbs2 _ p q A proofp proofq => Checktyty Gamma  proofp && Checktyty Gamma proofq
-  end.
-
-Fixpoint Checktyty (proof: tyty) : bool :=
-  match proof with
-  | TytyVar Gamma x A => if (Gamma x == Some A) then true else false
-  | TytyLam Gamma m A B proofm => match proofm with
-                                  | TytyVar Gamma2 _ _ => Gamma = Some A2 .: Gamma
-      if (Checktyty proofm) && (
-*)
 
 Lemma ty_app_ex : forall Gamma (B:type) s t, ty Gamma (App s t) B -> exists A, ty Gamma t A ->
     ty Gamma s (A ~> B).
@@ -155,22 +119,6 @@ Proof.
       asimpl; eauto using ty_deriv_of, ty_deriv_of_ren.
     - asimpl. eauto using ty_deriv_of.
 Qed.
-(*
-Lemma ty_dec : forall m Gamma, {exists tau, ty Gamma m tau} + {forall tau, ~ty Gamma m tau}.
-Proof.
-  unfold ty.
-  induction m.
-  - intros. destruct (Gamma x) eqn:HGamma.
-    + destruct (type_eq_dec t tau).
-      * left. constructor. constructor. subst. assumption.
-      * right. isfalse. inversion X. subst. rewrite HGamma in H0. ainv. apply n. reflexivity.
-    + right. isfalse. inversion X. rewrite HGamma in H0. ainv.
-  - intros. destruct IHm1 
-    + destruct IHm2.
-      * left.
-
-
-*)
 
 Ltac inhab_ty := inversion 1 as [HTY]; generalize dependent HTY;
                  repeat match goal with
@@ -212,37 +160,6 @@ Proof.
   ainv.
 Qed.
 
-(* Mal gucken, ob die Lemmatas überhaupt wichtig sind...
-Lemma ty_deriv_of_pres Gamma s A :
-  ty_deriv_of Gamma s A -> forall s',
-    step s s' ->
-    ty_deriv_of Gamma s' A.
-Proof.
-  induction 1; intros s' H_step.
-  - apply step_var in H_step. exfalso. apply H_step.
-  - eapply step_lam in H_step.
-    + c
-    ainv. eapply ty_deriv_of_subst.
-    
-  asimpl. apply step_var in H_step. ainv. inversion H_step; ainv; eauto using ty.
-    - eapply ty_subst.
-      + eassumption.
-      + intros [|]; simpl; eauto using ty.
-        intros. ainv.
-Qed.
-  
-Lemma ty_pres Gamma s A :
-      ty Gamma s A -> forall s',
-        step s s' ->
-          ty Gamma s' A.
-Proof.
-    induction 1; intros s' H_step; asimpl; inversion H_step; ainv; eauto using ty.
-    - eapply ty_subst.
-      + eassumption.
-      + intros [|]; simpl; eauto using ty.
-        intros. ainv.
-Qed.
-*)
 Definition mtTy : var -> option type := fun x => None.
 
 Definition has_ty (m: term) (tau: type) : Prop :=
@@ -387,17 +304,6 @@ Defined.
 Definition single_subst (a: var) (tau: type) : var -> type :=
     fun (y: var) => if a == y then tau else ? y.
 
-(*
-Definition upd_fun {A B : Type} {eqdec : EqDec A eq} (f : A -> B) (new_a : A) (new_b : B) (a : A) : B :=
-    if eqdec a new_a then new_b else f a.
-
-Notation "f [ a => b ]" := (@upd_fun nat _ _ f a b) (at level 2).
-
-Example updfun_ex : ((fun a : nat => 1 + a ) [7 => 9]) 7 = 9.
-Proof.
-    unfold upd_fun. simpl. reflexivity.
-Qed.
-*)
 Definition rel_dom {A B} (ls : list (A * B)) : list A :=
     map fst ls.
 
@@ -671,37 +577,6 @@ Fixpoint wrap_lam (n : nat) (m : term) : term :=
   | S n =>  \_ (wrap_lam n (rename (+1) m) @ !0)
   end.
 
-Compute (wrap_lam 2 tI).
-
-(*
-Fixpoint eta_expand (arities : var -> nat ) (m : term) : term :=
-  match m with
-    | ! x => 
-*)
-(*
-Fixpoint infer_type_aux (Gamma : var -> type) (firstfresh : nat) (m : term) : (list (type*type))*type :=
-  match m with
-  | ! x => ([], Gamma x)
-  | \_ s => let (cinner, tinner) := infer_type_aux () (firstfresh) s in
-*)
-
-(*
-Lemma nat_eq_eqdec : forall (x y : nat), {x = y} + {x <> y}.
-Proof.
-  induction x.
-  - induction y.
-    + left. reflexivity.
-    + right. auto.
-  - induction y.
-    + right. auto.
-    + destruct IHy.
-      * subst. right. auto.
-      * destruct (IHx y).
-        { subst. left. auto. }
-        { right. auto. }
-        Qed.
-*)
-  
 Fixpoint fv_type (tau: type) : set var :=
     match tau with
     | ? a => [a]
@@ -759,26 +634,6 @@ Fixpoint infer_type (Gamma : var -> option type) (depth: nat) (m : term) : optio
              end
   end.
 
-(*
-Lemma infer_type_correct : forall m n rho Gamma, infer_type Gamma n m = Some rho -> ty Gamma m rho.
-Proof.
-induction m.
-- intros.
-  simpl in H.
-  constructor.
- admit. (*intros. inv H.
-  destruct (infer_type Gamma n m2) eqn:im2.
-  + destruct (infer_type Gamma n m1) eqn:im1.
-    * econstructor.*)
-- ainv.  
-  destruct (infer_type (Some (? n) .: Gamma) (n + 1) s) eqn:Hi.
-  + inv H0.
-    constructor.
-    eapply IHm.
-    apply Hi.    
-  + ainv.
-Admitted.
-*)
 Definition upd {A} {B} {eqdec: EqDec A _} (f : A -> B) (upda: A) (updb: B) (a : A) : B :=
   if eqdec upda a then
     updb
@@ -825,17 +680,6 @@ Definition unify rho1 rho2 := unify_
 Definition mgu rho1 rho2 := unify rho1 rho2 >>=
                                   fun Su => Some rho1.[Su].
 
-(*
-Fixpoint get_ty (Gamma : var -> option type) (m : term) : option type :=
-  match m with
-  | ! x => Gamma x
-  | \_ s => get_ty Gamma s >>= fun tau := 
-
-
-.
-
-Compute (length (fv_type (? S 0 ~> ? S 0)) * depth_ty (? S 0 ~> ? S 0)).
-*)
 Lemma nat_refl: forall x, (PeanoNat.Nat.eq_dec x x = left eq_refl).
 Proof.
   intros.
@@ -858,136 +702,8 @@ Proof.
   - simpl. rewrite nat_refl. reflexivity.
   - simpl. rewrite IHt1. rewrite IHt2. reflexivity.
 Defined.
-(*
-Lemma mgu_refl : forall rho, mgu rho rho = Some rho.
-Proof.
-  intros.
-  induction rho.
-  + unfold mgu. unfold unify. simpl. rewrite nat_refl. simpl. unfold subformula_dec.
-    unfold equiv_dec. rewrite type_refl. simpl. unfold ids. unfold Ids_type. reflexivity.
-  + unfold mgu. simpl. unfold unify. simpl.
-
-
-    unfold nat_eq_eqdec. c. rewrite eqdec_refl. apply nat_eq_eqdec. }
-    ainv
-    + unfold mgu. unfold unify. simpl. compute. 
-  unfold mgu.
-*)
 
 Lemma notU : (if subformula_dec (? 0) (? 0 ~> ? 0) then true else false) = true.
 Proof.
     reflexivity.
 Qed.
-
-(*
-Fixpoint get_type (Gamma : var -> option type) (m : term) : option type :=
-    match m with
-    | ! x => Gamma x
-    | p @ q => match get_type p with
-               | None => None
-               | Some rho => 
-                   get_type q >>= fun rho2 => get_type q >>= fun rho1 =>
-                     match rho1 with
-                     | ? n => None
-                     | sigma ~> tau => uni
-                   match get_type q with
-                    | None => None
-                    | Some sigma => match get_ty
-
-Theorem typ_dec : forall m Gamma, { tau | , ty Gamma m tau).
-
-
-Theorem ty_not_app : forall tau Gamma m n, (forall t, ty Gamma n t -> ~(ty Gamma m (t ~> tau))) -> ~(ty Gamma (m@n) tau).
-Proof.
-    intros. intros F. inversion F. subst. apply (H A); assumption.
-Qed.
-
-Theorem app_dec : forall Gamma tau m n, is_dec (forall t, ty Gamma m t /\ ty Gamma n (t~> tau)).
-Proof.
-    intros. unfold is_dec.  Abort.
-
-Theorem typable_dec : forall m, Typable m -> forall Gamma, is_dec ( exists tau, ty Gamma m tau).
-Proof.
-    intros m Tm1 Gamma.
-    unfold is_dec.
-    induction m.
-    - destruct (Gamma x) eqn:HG.
-      + left. exists t. constructor. assumption.
-      + right. isfalse. inversion H. subst. rewrite HG in H1. ainv.
-    - assert (Typable (m1 @ m2)) as Tm2. assumption. 
-      apply (typable_subterm m1) in Tm1. apply (typable_subterm m2) in Tm2.
-      + apply IHm1 in Tm1. apply IHm2 in Tm2.
-        destruct Tm1.
-        { destruct Tm2.
-          - Check Typable. left. 
-          Abort.
-      *)
-    
-(*
-Theorem ty_dec : forall Gamma m tau, Typable m -> {ty Gamma m tau} + {~(ty Gamma m tau)}.
-Proof.
-
-    
-    intros.
-    generalize dependent tau.
-    induction m; intros tau.
-    - remember (Gamma x) as ty_x. destruct ty_x.
-      + destruct (type_eq_dec t tau).
-        { left. constructor. ainv. }
-        { right. isfalse. ainv. rewrite H3 in H0. ainv. contradiction. }
-      + right. isfalse. rewrite H1 in Heqty_x. ainv.
-    - assert (Typable m1 /\ Typable m2). 
-      { split; eapply typable_subterm; try apply H.
-        - repeat constructor.
-        - constructor 3. constructor. }
-      destruct H0 as [Tym1 Tym2]. eapply IHm1 in Tym1.
-      eapply IHm2 in Tym2.
-      destruct Tym1; destruct Tym2.
-      
-      unfold Typable in Tym1.
-
-      destruct IHm1 with (sigma ~> tau); try assumption.
-      +  Abort.
-      *)
-      (*
-      unfold Typable in Tym2. eapply IHm1 in Tym1. destruct Tym1.
-      + left. 
-
-
-*)
-(*
-      eapply IHm2 in Tym2.
-      destruct Tym2.
-      + eapply IHm1 in Tym1. destruct Tym1.
-        { left. eapply Ty_App.
-          - apply t0.
-          - apply t. }
-        { 0
-      left. eapply Ty_App with sigma.
-        { apply t0. }
-        { apply t. }
-      +  right. eapply ty_not_app.
-      induction (?A). intros F. inversion F. ainv. contradiction.
-*)
-(*
-Theorem ty_dec : forall m Gamma tau, {ty Gamma m tau} + {~(ty Gamma m tau)}.
-Proof.
-  induction m.
-    - intros. remember (Gamma x) as sigma. induction (sigma).
-      + destruct (type_eq_dec a tau).
-        { left. constructor. ainv. }
-        { right. intros F. ainv. rewrite H0 in H2. ainv. apply n. reflexivity. }
-      + right. intros F. ainv. rewrite H0 in H2. ainv.
-    - intros. 
-      
-    (*
-      destruct IHm2.
-      pose proof (IHm2 sigma) as Hm2. pose proof (IHm1 (sigma ~> tau)) as Hm1.
-      destruct Hm2 ; destruct Hm1.
-      + left. apply Ty_App with sigma; assumption.
-      + 
-      right. intros F. ainv. generalize dependent sigma. intros.
-        assert (t = A).
-        { generalize dependent A. generalize dependent t. intuition.*)
-Abort.
-*)

@@ -52,10 +52,6 @@ Proof.
     intros. ainv. exists A. ainv. 
 Qed.
 
-(*
-Definition list_comp {A} (l1 : list A) (l2 : list A) : list A.
- *)
-
 Fixpoint update_list {A} (l1 : list A) (Su : nat -> option A) : list A :=
   match l1 with
   | [] => []
@@ -68,13 +64,10 @@ Fixpoint update_list {A} (l1 : list A) (Su : nat -> option A) : list A :=
 Lemma ty_ren_T Gamma s A:
   ty_T Gamma s A -> forall Delta xi,
     (forall n, nth_error Gamma n = (xi >>> nth_error Delta) n) ->
-(*    Gamma = map (fun x => x.[ren xi]) Delta -> *)
       ty_T Delta s.[ren xi] A.
 Proof.
     induction 1.   
     - constructor. subst. rewrite <- e. rewrite (H x). reflexivity.
-      (*rewrite nth_error_map in e. destruct (nth_error Delta x) eqn:H.
-      + apply some_eq in e. rewrite <- e. *)
     - intros. subst. asimpl. econstructor. eapply IHX. intros. simpl. destruct n.
       + ainv.
       + simpl. rewrite H. reflexivity.

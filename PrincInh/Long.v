@@ -142,16 +142,6 @@ Lemma Forall2_inh {B C}: forall (A : B -> C -> Type) ms ts, Forall2 (fun a b => 
   Qed.
 
 
- (*
-Lemma long_ty_T_P : forall Gamma m tau, long_ty_T Gamma m tau -> long_ty_P Gamma m tau.
-Proof.
-  induction 1 using long_ty_T_ind'.
-  - constructor. assumption.
-  - econstructor.
-    + apply H.
-    + apply long_rel_if_Forall2_T in X0.
-  *)
-
 Lemma long_ty_inh : forall Gamma m tau, long_ty_P Gamma m tau <-> inhabited (long_ty_T Gamma m tau).
 Proof.
   intros.
@@ -235,49 +225,6 @@ Proof.
     + apply long_rel_rev_T in X0. assumption.
 Qed.
 
-(*
-Lemma long_general_abs : forall m tau Su Gamma,
-  long_ty (Gamma.?[Su]) (\_ m) tau.[Su] -> ty Gamma (\_ m) tau -> long_ty Gamma (\_ m) tau.
-Proof.
-  Admitted.
- *)
-
-(* Das scheint nicht gebraucht zu werden... außerdem ist das andersherum wahrscheinlich besser...
-long_ty -> exists a, tau <> ? a
-Lemma not_long_ty : forall Gamma tau x ms, (forall a, tau <> (? a)) -> ~ long_ty_P Gamma (curry (!x) ms) tau.
-Proof.
-  intros.
-  intros F. inv F. inv X.
-  - remember (! x) as n.
-    generalize dependent n.
-    induction ms using rev_ind; intros.
-    + simpl in H1. subst. inversion H1.
-    + rewrite curry_tail in H1. ainv. 
-  - apply (H a). reflexivity.
-Qed.
-
-Lemma long_ty_app_gen_T : forall s t B Gamma, long_ty_T Gamma (s @ t) B 
-  -> { x  & { ms & { A  & { a & { ts, B = (? a) /\ s = curry (! x) ms /\ Gamma x = Some (make_arrow_type ts (A ~> B))
-     /\ long_rel_T Gamma ms ts.
-Proof.
-  intros.
-  ainv. exists x. apply long_rel_rev in H1.
-  destruct (rev ms) eqn:rms.
-  - symmetry in rms. apply rev_nil_iff_nil in rms. ainv.
-  - destruct (rev ts) eqn:rts.
-    + ainv. (* symmetry in H2. apply app_eq_nil in H2. ainv. *)
-    + ainv. exists (rev l). exists t1. exists a. exists (rev l0).
-      split.
-      { reflexivity. }
-      { split.
-        - symmetry in H2. apply rev_cons_iff_last in H2. ainv.
-          apply curry_split in H1. ainv.
-        - split.
-          + symmetry in H3. apply rev_cons_iff_last in H3. rewrite H3 in H1.
-            rewrite make_arrow_type_last in H1. assumption. 
-          + apply long_rel_rev. repeat rewrite rev_involutive. assumption. }
-Qed.
- *)
 
 Lemma long_ty_lam_aux_T : forall m Gamma, { s & { t & long_ty_T (s :: Gamma) m t  } } ->
   { t0 & long_ty_T Gamma (\_ m) t0}.
@@ -285,112 +232,6 @@ Proof.
   intros.
   ainv. exists (x ~> x0). constructor. assumption.
 Qed.
-
-(*
-Lemma mkarrow_subst_exists2 : forall ts x Su a, x.[Su] = make_arrow_type ts (? a) ->
-  exists ts0 a0, (x = ? a0 /\ Su a0 = make_arrow_type ts (? a)) /\
-  ts = ts0 /\ ? a = (? a0).[Su] /\ x = (make_arrow_type ts0 (? a0)).
-Proof.
-  induction ts.
-  - intros. exists []. simpl in H. symmetry in H. inversion H. apply subst_var_is_var in H as [b H]. exists b.
-    split.
-    + reflexivity.
-    + split; ainv.
-  - intros. rewrite make_arrow_type_head in H. inversion H. apply subst_arr_is_arr_or in H as [[st [st0 [xst [xsu stmkarr]]]] | xvar].
-    + apply IHts in stmkarr as [ts0 [a1 [Htsmap [Ha0var Hstarr]]]]. exists (st :: ts0). exists a1.
-      split. 
-      { ainv. }
-      { split; ainv. }
-    + exists [a]. eexists. split.
-      { simpl.
-    simpl.
-Qed.
-      rewrite make_arrow_type_head.
-      split.
-      { 
-      reflexivity.
-    + ainv. exists []. exists x0. reflexivity.
-Qed.
-*)
-(*
-Lemma repo_mkarrow_subst : forall ts Gamma Su x a, Gamma.?[Su] x = Some (make_arrow_type ts (? a)) ->
-exists sa sts, make_arrow_type ts (? a) = (make_arrow_type sts (? sa)).[Su] /\ ts = map (subst Su) sts /\ (? a) = (? sa).[Su].
-Proof.
-  intros.
-  unfold subst_option in H. destruct (Gamma x) eqn:HG.
-  - inversion H. apply mkarrow_subst_exists in H1 as [ts0 [a0 H1]].
-    exists a0. exists ts0. split.
-    + rewrite H1. reflexivity.
-    + split.
-      { 
-  induction ts.
-  - ainv. Admitted.
-*)
-
-(*
-Lemma long_ty_subst : forall m t Gamma Su, long_ty Gamma.?[Su] m t -> exists t0, long_ty Gamma m t0.
-Proof.
-  intros.
-  remember (Gamma.?[Su]) as sGamma.
-  generalize dependent Gamma.
-  generalize dependent Su.
-  induction H using long_ty_ind'.
-  - intros. subst. apply long_ty_lam_aux. exists A. apply IHlong_ty.
-    ainv.
-  econstructor. constructor.
-  Show Existentials.
-  Grab Existantial Variables. instantiate (1:=exists). prooflater.
-  - prooflater. 
-  Qed.
-  
-  ainv. eexists. econstructor.
-    + apply repo_subst_exists in H2 as [B [HB HGamma]].
-      apply mkarrow_subst_exists in HB.
-  revert Goal1. apply IHlong_ty.
-  econstructor. constructor. 
-
-  induction m.
-  - intros. ainv. apply repo_subst_exists in H0. symmetry in H1. apply curry_if_nil in H1.  
-    ainv. symmetry in H0. apply subst_var_is_var in H0. ainv. exists (? x0). econstructor. 
-    + instantiate (1:=[]). simpl. apply H0.
-    + constructor.
-  - intros. ainv. apply repo_subst_exists in H0 as [B [Bmkat HB]]. apply mkarrow_subst_exists in Bmkat.
-    ainv. assert (exists msinit mslast, ms = msinit ++ [mslast]).
-    { destruct ms.
-      + inv H0.
-      + apply list_split_rev. exists t. exists ms. reflexivity. }
-    destruct H as [msinit [mslast H]]. subst. apply curry_split in H0 as [H0 Hm2].
-    subst. exists (? x1). econstructor.
-    + apply H1.
-    + constructor.
-    inv H0.
-    + inv H0.
-    apply mkarrow_subst_exists in H4. ainv.  
-  intros.
-  remember (Gamma.?[Su]) as sGamma.
-  generalize dependent Gamma.
-  generalize dependent Su.
-  induction H using long_ty_ind'.
-  - ainv. destruct (Gamma0.?[Su] 0). 
-    +
-  
-  apply long_ty_subst_lam_aux.
-    
-  induction H using long_ty_ind'.
-  - inv H. ainv. apply long_ty_subst_lam_aux. exists A. apply IHlong_ty. 
-      rewrite <- subst_repo_cons. ainv. prooflater.
-    + 
-  apply (repo_pump_subst _ _ A _) in HeqsGamma. apply IHlong_ty in HeqsGamma.
-  econstructor. econstructor.
-    
-
-Lemma long_rel_subst Gamma Su ms ts: long_rel Gamma.?[Su] ms ts -> exists ts0, long_rel Gamma ms ts0.
-Proof.
-  remember (Gamma.?[Su]) as sGamma.
-  induction 1.
-  - exists []. constructor.
-  - exists (
-*)
 
 Lemma long_general_T : forall m Su tau Gamma,
   ty_T Gamma m tau -> long_ty_T Gamma..[Su] m tau.[Su] -> long_ty_T Gamma m tau.
@@ -423,7 +264,6 @@ Proof.
               - simpl. apply f_equal. assumption. } }
         rewrite <- H0 in H.
         generalize (curry_le (! x) ms _ H).
-        (* revert H1 HForall H3 IHn. clear...*)
         clear HGamma H2.
         revert X1 HForall H3 IHn.
         clear ...

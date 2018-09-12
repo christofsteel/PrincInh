@@ -61,17 +61,6 @@ Qed.
 Notation "'!!' x '@@' ms" := (NFcurr ms x) (at level 31, left associativity).
 Notation "'\__' s" := (NFLam s) (at level 35, right associativity).
 
-(* Instance Subst_term : Subst nfterm := fun sigma =>
-fix dummy (s : nfterm) {struct s} : nfterm :=
-  match s as n return (annot nfterm n) with
-  | !! x @@ _ => match sigma x with
-                | 
-                
-  | \__ s0 => \__ (dummy s0)
-  end.
-derive. Defined.
-  *)
-
 Inductive subterm_nf : nfterm -> nfterm -> Type :=
 | sub_ref : forall m, subterm_nf m m
 | sub_lam m1 m2 : subterm_nf m1 m2 -> subterm_nf m1 (\__ m2)
@@ -131,18 +120,6 @@ Inductive nfty_long_subj : forall Gamma Gamma' m m' rho rho', nfty_long Gamma m 
                        n (len: n < length ms),   
     nfty_long_subj _ _ _ _ _ _ (proofs n len) (NFTy_var_long _ _ _ _ _ Gammaok Lenproof proofs).
 
-(*
-Lemma nfty_long_inv_lam : forall s Gamma sigma tau (proof1 : nfty_long (sigma :: Gamma) s tau)
-                            (proof2 : nfty_long Gamma (\__ s) (sigma ~> tau)),
-    proof2 = NFTy_lam_long _ _ _ _ proof1.
-Proof.
-  intros. inversion proof2.
-
-Lemma nfty_long_proof_eq : forall Gamma m rho (proof1 : nfty_long Gamma m rho) (proof2 : nfty_long Gamma m rho), proof1 = proof2.
-Proof.
-  induction proof1.
-  - intros. inv proof2. ainv.
- *)
 
 Lemma nfty_long_subterm : forall n m, subterm_nf n m -> forall tau Gamma, nfty_long Gamma m tau -> {Gamma' & {tau' & nfty_long Gamma' n tau'}}.
 Proof.
@@ -153,19 +130,6 @@ Proof.
     apply nth_error_nth_ok in H. destruct H as [lp H]. pose proof (X1 n lp). eapply IHX. rewrite H in X0. exact X0.
 Qed.
 
-(*
-Inductive nfty_sfc (Gamma : repo) : nfterm -> type -> Type :=
-| NFTy_var_sfc x tau ts ms : nth_error Gamma x = Some (make_arrow_type ts tau) ->             
-                         (forall n (pms : n < length ms) (pts : n < length ts),
-                             nfty_sfc Gamma (nth_ok ms n pms) (nth_ok ts n pts)) ->
-             nfty_sfc Gamma (!!x @@ ms) tau
-| NFTy_lam_sfc s sigma tau : nfty_sfc (sigma :: Gamma) s tau -> nfty_sfc Gamma (\__ s) (sigma ~> tau)
-.
-*)
-
-
-
-                                   
 
 Fixpoint NFterm_term nft : term :=
   match nft with
@@ -313,92 +277,11 @@ Fixpoint max_fvar (m: nfterm) : var :=
 Definition all_var_in_repo {A} m (Delta : list A) := max_fvar m < S (length Delta).
 
 
-(*
-Lemma NF_app1 : forall p q, NF (p @ q) -> NF p.
-Admitted.
-Lemma NF_app2 : forall p q, NF (p @ q) -> NF q.
-Admitted.
-*)
 
 Fixpoint term_NFterm_proof (t: term) : NF t -> nfterm.
-(*  match t with
-  | ! x => fun _ => !! x @@ []
-  | \_ s => fun proof => \__ term_NFterm_proof s (NF_lam _ proof)
-  | p @ q => (fix inner p q :=
-    match p with
-    | \_ s => fun proof => False_rect _ (NF_is_no_redex s _ proof)
-    | ! x => fun proof => !! x @@ [term_NFterm_proof q (NF_app2 _ _ proof)]
-    | p' @ q' => fun proof => inner p' q' (NF_app1 _ _ proof)
-    end) p q
-  end.
-
-      
-
-             ]
-    
-    
-    match p with
-            | \_ s => fun proof => False_rect _ (NF_is_no_redex s _ proof)
-            | ! x => fun proof => !! x @@ [term_NFterm_proof q (NF_app2 _ _ proof)]
-            | p' @ q' => fun proof => 
-            end              
-  end.
-
-    fun proof => match term_NFterm_proof p (NF_app1 _ _  proof) with
-            | \__ s => fun proof' => False_rect _ (NF_is_no_redex p q proof)
-            | !! x @@ ms => fun _ => !! x @@ (ms ++ [term_NFterm_proof q (NF_app2 _ _ proof)])
-            end proof
-  end.
-
-            
-            
-
-    match p with
-            | \_ s => fun proof => False_rect _ (NF_is_no_redex s _ proof)
-            | ! x => fun proof => !! x @@ [term_NFterm_proof q (NF_app2 _ _ proof)]
-            | p' @ q' => fun proof => 
-            end              
-  end.
-
-
-              match (term_NFterm_proof p (NF_app1 p q proof)) with
-                      | \__ s => False_rect _ (NF_is_no_redex p q _)
-                      | !! x @@ ms => !! x @@ (ms ++ [term_NFterm_proof q (NF_app2 _ _ proof)]) 
-                      end
-  end.
-
-
-  | (! x) @ q => fun proof => !! x @@ 
-  | (p' @ q') @ q => fun _ => match term_NFterm_proof (p' @ q') (NF_app1 _) with
-                  | !! x @@ ms => !! x @@ (ms ++ [q])
-                  |
-
-  end
-.
-
-
-           ]
-
-
-
-*)
 Proof.
   intros proof.
   apply NFterm in proof.
   destruct proof.
   apply x.
 Defined.
-(*
-Print term_NFterm_proof.
-  
-Lemma NFterm_term_inv2 : forall t (proof : NF t), NFterm_term (term_NFterm_proof t proof) = t.
-Proof.
-  intros.
-  induction t.
-  - reflexivity.
-  - pose proof (IHt1 (NF_app1 _ _ proof)).
-    pose proof (IHt2 (NF_app2 _ _ proof)).
-    simpl.
-    unfold term_NFterm_proof. unfold NFterm. unfold term_rect. simpl. unfold eq_rect_r. unfold eq_rect. 
-    destruct (eq_sym eq_refl).
-*)

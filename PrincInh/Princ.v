@@ -5,17 +5,8 @@ Require Import Coq.Classes.EquivDec.
 Require Import Autosubst.Autosubst.
 Require Import Datatypes.
 
-(*
-Require Import PrincInh.Terms.
-Require Import PrincInh.Terms2.
-*)
 Require Import PrincInh.TypesCommon.
-(*
-Require Import PrincInh.TypesType.
-Require Import PrincInh.TypesProp. *)
 Require Import PrincInh.Utils.
-(*Require Import PrincInh.Long.
-Require Import PrincInh.Filtr. *)
 Require Import PrincInh.NFTerms.
 Require Import PrincInh.SfC.
 Require Import PrincInh.Paths.

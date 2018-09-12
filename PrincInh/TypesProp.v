@@ -66,31 +66,7 @@ Lemma ty_app_ex_P : forall Gamma (B:type) s t, ty_P Gamma (App s t) B -> exists 
 Proof.
     intros. ainv. exists A. ainv. 
 Qed.
-(*
-Lemma ty_ren_P Gamma s A:
-  ty_P Gamma s A -> forall Delta xi,
-    Gamma = xi >>> Delta ->
-      ty_P Delta s.[ren xi] A.
-Proof.
-    induction 1.   
-    - constructor. subst. autosubst.
-    - intros. subst. asimpl. econstructor. eapply IHty_P. autosubst.
-    - intros. subst. asimpl. econstructor. eapply IHty_P1. reflexivity.
-                                           eapply IHty_P2. reflexivity.
-Qed.                                           
 
-Lemma ty_subst_P Gamma s A:
-      ty_P Gamma s A -> forall sigma Delta,
-        (forall x t, Gamma x = Some t -> ty_P Delta (sigma x) (t)) ->
-          ty_P Delta s.[sigma] A.
-Proof.
-  induction 1.
-    - intros. simpl. apply H0. assumption.
-    - econstructor. eapply IHty_P. intros [|];
-      asimpl; eauto using ty_P, ty_ren_P.
-    - asimpl. eauto using ty_P.
-Qed.
-*)
 Definition has_ty_P (m: term) (tau: type) : Prop :=
     ty_P [] m tau.
 

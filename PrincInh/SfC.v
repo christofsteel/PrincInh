@@ -362,7 +362,7 @@ Fixpoint each_judg_SfC {Delta R m pi} (P : forall Delta' R' m' pi', SfC Delta' R
   | SfC_I _ _ s' pi' proof' => each_judg_SfC (P) proof'
   | SfC_E _ _ ms pi pi' x DeltaProof Rproof proof' =>
     forall (n : nat) (p : n < length ms),
-     (* P _ _ _ _ (proof' n p) ->*) each_judg_SfC (P) (proof' n p)
+      each_judg_SfC (P) (proof' n p)
   end.
 
 Lemma each_judg_subj_SfC : forall Delta R t pi (m : SfC Delta R t pi) Pr,
@@ -396,7 +396,7 @@ Fixpoint any_judg_SfC {Delta R m pi} (P : forall Delta' R' m' pi', SfC Delta' R'
   | SfC_I _ _ s' pi' proof' => any_judg_SfC (P) proof'
   | SfC_E _ _ ms pi pi' x DeltaProof Rproof proof' =>
     exists (n : nat) (p : n < length ms),
-     (* P _ _ _ _ (proof' n p) ->*) any_judg_SfC (P) (proof' n p)
+      any_judg_SfC (P) (proof' n p)
   end.
 
 Lemma siebzehn_aux {Delta R m pi} (proof : SfC Delta R m pi) : siebzehn_bedingung proof -> each_judg_SfC (@siebzehn_bedingung) proof .
@@ -653,87 +653,12 @@ Proof.
   apply X0.
 Qed.
 
-(*
-Lemma alltoconcat {A B} :
-forall (ms : list A) m (f: A -> nat -> option (list B)) a,
-  (forall n (lp : n < length ms), f (nth_ok ms n lp) (m + n) = Some a) ->
-  exists xs, option_concat (combine_with f ms (seq m (length ms))) = Some xs.
-Proof.
- induction ms.
- - intros. asimpl in *.
-   exists []. reflexivity.
- - asimpl in *.
-   assert (forall (n : nat) (lp : n < length (a :: ms)), f (nth_ok ms (S n) lp) (S (m + n)) = Some a0).
-   {
-     intros. erewrite <- H.
-     
-   }
-   unfold option_concat. destruct (all_some _) eqn: Hall.
-   + exists (concat l). reflexivity.
-   + unfold all_some in Hall.
-     destruct (f a 0) eqn: Hf.
-     * unfold option_concat in IHms.       
-     assert (forall (n: nat) (lp : n < length ms), f (nth_ok (a0 :: ms) (S n) (lt_n_S _ _ lp)) n = f (nth_ok ms n lp) n).
-     {
-       intros.
-       remember (nth_ok (a0 :: ms) _ _) as n1. symmetry in Heqn1. apply nth_ok_nth_error in Heqn1.
-       remember (nth_ok ms _ _) as n2. symmetry in Heqn2. apply nth_ok_nth_error in Heqn2.
-       asimpl in Heqn1. rewrite Heqn1 in Heqn2. apply some_eq in Heqn2. rewrite Heqn2. reflexivity.
-     }
-     assert (
-         (forall (n : nat) (lp : n < length ms), f (nth_ok (a0 :: ms) (S n) (lt_n_S n (length ms) lp)) n = Some a) ->
-         exists xs : list B,
-           match all_some (combine_with f ms (range (length ms))) with
-           | Some xs0 => Some (concat xs0)
-           | None => None
-           end = Some xs
-     ). {
-       intros.
-       apply IHms.
-       intros. rewrite <- H0. apply H1.
-     }
-     rewrite <- H0 in IHms.
-     * assert (forall (m :A) ms, 0 < length (m :: ms)).
-       {
-         intros.
-         apply Nat.lt_0_succ.
-       }
-       pose proof (H 0 (H0 _ _)).
-       asimpl in H1. rewrite Hf in H1. discriminate H1.
-
-     assert (forall (n: nat) (lp : n < length ms), f (nth_ok (a0 :: ms) (S n) (lt_n_S _ _ lp)) n = f (nth_ok ms n lp) n).
-     {
-       intros.
-       remember (nth_ok (a0 :: ms) _ _) as n1.
-       simpl.
-     }
-     assert (forall (n: nat) (lp : n < length ms), f (nth_ok ms n lp) n = Some a).
-     {
-       intros.
-       assert (forall x, nth_ok ms n lp = nth_ok (x::ms) (S n) (lt_n_S _ _ lp)).
-       {
-         intros.
-         remember (nth_ok (x::ms) _ _) as n1. symmetry in Heqn1. apply (nth_ok_nth_error).
-         apply nth_ok_nth_error in Heqn1. simpl in Heqn1. assumption.
-       }
-       erewrite (H0).
-       apply H.
-     }
-
-     asimpl in H.
-     contradiction.
-
-   rewrite combine_with_map.
-
-*)
-
 Lemma exists_R_m m : forall Delta, all_var_in_repo m Delta -> forall pi, { R' & R_m_aux Delta pi m = Some R'}.
 Proof.
   induction m using nfterm_rect'.
   - intros. asimpl in *. unfold all_var_in_repo in H.
     pose proof H as Hx. apply fold_left_max_acc in Hx.
     apply lt_S_n in Hx.
-    (*apply Nat.max_lub_lt_iff in H. destruct H. *)
     pose proof (in_seq (length ms) 0).
     assert (forall n, In n (seq 0 (length ms)) -> exists lp m, nth_ok ms n lp = m) as Hseqlen.
     {
@@ -924,63 +849,6 @@ Proof.
       inversion H0. subst. assumption.
 Qed.
 
-
-(*
-Lemma einundzwanzig : forall m Delta x y pi pi' R,
-  x < y ->
-  SfC (upd_list (upd_list Delta pi x) pi y) R m pi'
-  -> SfC (upd_list Delta pi x) R m.[ren (fun a => if Nat.eq_dec a y then (x) else (a))] pi'.
-Proof.
-  intros.
-  eapply SfC_ren.
-  - apply X.
-  - intros. simpl. destruct (Nat.eq_dec n y).
-    + rewrite (upd_list_nth_eq _ _ _ _ e).
-      rewrite (upd_list_nth_eq _ _ _ _ eq_refl). reflexivity.
-    + rewrite (upd_list_nth_neq).
-      * reflexivity.
-      * intros F. symmetry in F. contradiction.
-      *  
-
-    simpl. remember (upd_list Delta pi x) as Delta'.
-    destruc
-    induction n.
-    + destruct y.
-      * induction x.
-        ** simpl.
-
-        simpl. destruct Delta.
-        ** ainv. simpl. destruct (upd_list (repeat [] x ++ [pi]) pi 0) eqn:H.
-           { destruct (repeat [] x ++ [pi]).
-             {
-               ainv.
-             }
-             ainv.
-           }
-           unfold repeat. rewrite nth_error_nil. reflexivity.
-        ** ainv. destruct x.
-           { reflexivity. }
-           { simpl. }
-        
-        inv X. ainv.
-      destruct Delta; simpl.
-      * rewrite nth_error_nil. reflexivity.
-      * destruct x.
-        ** destruct y; reflexivity.
-        ** simpl. destruct y.
-           {
-             simpl. 
-           }
-           reflexivity.
-           simpl.
-      unfold nth_error.
-  remember (upd_list Delta pi x) as Delta'.
-  remember (upd_list Delta' pi y) as Delta''.
-  induction X.
-  - constructor. subst. unfold up. simpl.
-  -
- *)
-
 Definition R_tau_cond (tau: type) (pipi' : path * path) : bool :=
   let pi := fst pipi' in
   let pi' := snd pipi' in
@@ -1053,7 +921,6 @@ Fixpoint wrap_lam (n: nat) m :=
   | 0 => m
   | S n => \__ (wrap_lam n m)
   end.
-(* Wir überspringen mal so alles.... *)
 
 Lemma Delta2Gamma_pump : forall Delta rho rho' pi, P rho pi = Some rho' -> forall Gamma, Delta2Gamma rho Delta = Some Gamma ->
                          Delta2Gamma rho (pi::Delta) = Some (rho' :: Gamma).
@@ -1364,22 +1231,6 @@ Proof.
     destruct IHX2 as [x2 [Pa1 Pb2]]. assert (x1 = x2). rewrite Pa1 in Pb. injection Pb. auto. subst. auto.
 Qed.
 
-(*
-Lemma R_tau_dom_P {tau pi pi'} : In (pi, pi') (R_tau_list tau) -> {a & P tau pi = Some (? a) /\ P tau pi' = Some (? a)}.
-Proof.
-  intros.
-  unfold R_tau_list in H.
-  apply filter_In in H.
-  destruct H.
-  unfold R_tau_cond in H0. simpl in H0.
-  apply andb_prop in H0.
-  destruct H0.
-  destruct (P tau pi) eqn:Hpi; try discriminate H1.
-  destruct t eqn:Ht; try discriminate H1.
-  destruct (P tau pi') eqn:Hpi'; try discriminate H1.
-  exists x. split. reflexivity. rewrite equivb_prop in H1. ainv.
-Qed.*)
-
 Lemma Delta2Gamma_x {rho Delta Gamma x pi}: Delta2Gamma rho Delta = Some Gamma ->
                       nth_error Delta x = Some pi ->
                       {pr & nth_error Gamma x = Some (P_ok rho pi pr)}.
@@ -1616,38 +1467,6 @@ Proof.
   intros.
   unfold R_tau_list. Abort.
 
-(*
-Lemma R_m_ts_nil_l : forall m pi Delta pi' R, R_m_aux Delta pi m = Some R -> In ([], pi') R -> False.
-Proof.
-  induction m using nfterm_ind'.
-  - intros. asimpl in H0. destruct (nth_error Delta x) eqn:Hnth; try discriminate H0.
-    rewrite (combine_with_Rstuff p Delta) in H0. unfold option_concat in H0.
-    destruct (all_some _) eqn:Hall;try discriminate H0. rewrite combine_with_map in Hall.
-    rewrite Forall_forall in H. destruct ms.
-    + asimpl in *. assert (R = [(p, pi)]). clear H1. ainv.
-    eapply H.
-      +
-    pose proof all_some_nth _ _ Hall.
-    apply (all_some_map _ _ _) in Hall.
-    rewrite all_some_map in Hall.
-    eapply all_some_some in Hall.
-
-    rewrite nth_error_nil in H0. discriminate H0.
-  - intros. asimpl in H. unfold R_m_aux in H.
-
-  unfold R_m_ts in X.
-  destruct (R_m m) eqn:HRm.
-  - induction m using nfterm_ind'.
-    + asimpl in *. rewrite nth_error_nil in HRm. discriminate HRm.
-    + asimpl in *.
-
-    inversion X.
-    + ainv.
-  - ainv.
-    inversion X.
-    + ainv.
-*)
-
 Lemma P_replace_at_path : forall tau pi b pr,  P_ok (replace_at_path b tau pi) pi pr = b.
 Proof.
   induction tau.
@@ -1883,93 +1702,6 @@ Proof.
 Qed.
 
 Definition replace_all_paths2 tau pis b := fold_right (fun pi tau => replace_at_path b tau pi) tau pis.
-(*
-Lemma replace_var_once : forall tau pi l pi' b,
-    P (replace_at_path (? b) tau pi') pi = None ->
-    P (replace_all_paths2 tau (pi'::l) (? b)) pi = None.
-Proof.
-  
-  induction pi.
-  - intros.
-    ainv.
-  - intros. destruct a.
-    + simpl in IHpi. simpl replace_all_paths2. simpl.
-
-
-  induction pi.
-  - intros. ainv.
-  - intros. destruct a.
-    + destruct (replace_at_path (? b) tau pi') eqn:Hr.
-      * asimpl. rewrite Hr. pose proof replace_all_var_is_var l b x as [d Hrr].
-        unfold replace_all_paths in Hrr. rewrite Hrr. reflexivity.
-      * simpl. rewrite Hr. induction l.
-        -- simpl in H. simpl. assumption.
-        -- generalize dependent t1. induction a.
-           ++ intros. simpl. pose proof replace_all_var_is_var l b b. destruct H0. rewrite e. reflexivity.
-           ++ intros. destruct a.
-              ** simpl. apply IHa. ainv.
-
-        clear H0. induction pi'.
-        -- simpl. pose proof replace_all_var_is_var l b b. destruct H. rewrite e. reflexivity.
-        -- 
-
-        simpl in Hr. inv Hr. inversion H.
-        simpl replace_all_paths.
-
-      ainv.
-    inversion H.
-    destruct a.
-    +
-Lemma replace_var_once : forall pi l tau pi' b,
-    P (replace_at_path (? b) tau pi') pi = Some (? b) ->
-    {P (replace_all_paths tau (pi'::l) (? b)) pi = Some (? b)} + {P (replace_all_paths tau (pi'::l) (? b)) pi = None}.
-Proof.
-
-  induction l.
-  - intros. left. simpl. assumption.
-  - intros. destruct (is_prefix_dec a pi).
-    + destruct (IHl tau pi' pi b H).
-      * right. simpl in e.
-
-
-    ainv.
-  - intros. simpl.
-    assert (~In pi (dom_P (replace_at_path (? b) tau pi'))).
-  { intros F. apply dom_P_some in F. ainv. rewrite H2 in H1. discriminate H1. }
-  eapply replace_not_in_dom in H0. simpl.
-  simpl.
-  revert tau H H0.
-  induction l.
-  - ainv.
-  - intros. simpl.
-  apply dom_P_none in H0.
-  simpl. remember (replace_at_path (? b) tau pi') as Rtau.
-  ainv.
-
-  induction l.
-  - intros. ainv.
-  - intros. assert (~In pi (dom_P (replace_at_path (? b) tau pi'))).
-    {
-      intros F. apply dom_P_some in F. ainv. rewrite H2 in H1. discriminate H1.
-    }
-    simpl.
-    remember (replace_at_path (? b) tau pi') as Rtau.
-    
-    pose proof P_ simpl.
-    rewrite replace_all_var. rewrite
-    ainv.
-
-
-Lemma prefix_replacable : forall l pi pi' b tau, In pi' l -> is_prefix pi' pi ->
-                              P (replace_all_paths tau l (? b)) pi = None.
-Proof.  
-  induction l.
-  - intros. ainv.
-  - intros. destruct H.
-    + subst. simpl. 
-
-*)
-
 Lemma sz_subst_is_fresh : forall pi' tau m pi pr,
     R_m_ts m pi pi' ->
     P_ok (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau)) pi' pr = fresh_type tau.
@@ -2097,26 +1829,3 @@ Proof.
   pose proof (fuenfundzwanzig_iii_i Hclosed X1).
   assumption.*)
 Admitted.
-
-
-
-(*
-Definition chain (sigma : (type * type * type * type * type)) : type :=
-  match sigma with
-  | (b1, c1, b2, c2, d) => (b1 ~> c1) ~> (b2 ~> c2) ~> d
-  end.
-
-Fixpoint find_term (a : type) (ls : list type) : option nat :=
-  match ls with
-  | [] => None
-  | h :: tl => if h == a then Some 0 else find_term a tl >>= (S >>> Some)
-  end.
-
-Compute (find_term (? 0) ([? 2; ? 2; ? 0])). xz
-
-Definition P2type2type (sigmas : list (type * type * type * type * type)) (a: var) : type :=
-  make_arrow_type (map chain sigmas) (? a).
-
-
-Fixpoint P2term2princ : (sigmas : list (type * type * type * type)) (a: var) : type :=
-*)
