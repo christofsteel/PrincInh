@@ -5,7 +5,6 @@ Require Import Autosubst.Autosubst.
 Require Import PrincInh.Terms.
 Require Import PrincInh.TypesCommon.
 Require Import PrincInh.TypesType.
-Require Import PrincInh.TypesProp.
 Require Import PrincInh.Utils.
 
 Import ListNotations.

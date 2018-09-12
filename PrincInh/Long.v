@@ -5,7 +5,6 @@ Require Import Autosubst.Autosubst.
 Require Import PrincInh.Terms.
 Require Import PrincInh.TypesCommon.
 Require Import PrincInh.TypesType.
-Require Import PrincInh.TypesProp.
 Require Import PrincInh.Utils.
 
 Import ListNotations.
@@ -22,19 +21,6 @@ with
     | lr_atom_T : long_rel_T Gamma [] []
     | lr_cons_T m t ms ts : long_ty_T Gamma m t -> long_rel_T Gamma ms ts -> 
             long_rel_T Gamma (m::ms) (t::ts)
-.
-
-Inductive long_ty_P (Gamma : repo) : term -> type -> Prop :=
-| Long_I_P s A B : long_ty_P (A :: Gamma) s B ->
-        long_ty_P Gamma (Lam s) (Arr A B)
-| Long_E_P x ms ts a : nth_error Gamma x = Some (make_arrow_type ts (? a)) 
-        -> long_rel_P Gamma ms ts -> 
-        long_ty_P Gamma (curry (! x) ms) (? a)
-with 
-    long_rel_P (Gamma : repo) : list term -> list type -> Prop :=
-    | lr_atom_P : long_rel_P Gamma [] []
-    | lr_cons_P m t ms ts : long_ty_P Gamma m t -> long_rel_P Gamma ms ts -> 
-            long_rel_P Gamma (m::ms) (t::ts)
 .
 
 Lemma Long_E_aux_T : forall Gamma x ms ts a curr v,
@@ -80,45 +66,6 @@ Definition long_ty_T_ind' :
                   end) ms ts longrelproof )
              end.
 
-Definition long_ty_P_ind' :
-      forall P : repo -> term -> type -> Prop,
-       (forall (Gamma : repo) (s : term) (A B : type),
-        long_ty_P (A :: Gamma) s B ->
-        P (A :: Gamma) s B -> P Gamma (\_ s) (A ~> B)) ->
-       (forall (Gamma : repo) (x : var) 
-          (ms : list term) (ts : list type) (a : var),
-        nth_error Gamma x = Some (make_arrow_type ts (? a)) ->
-        long_rel_P Gamma ms ts -> 
-        Forall2 (P Gamma) ms ts -> 
-        P Gamma (curry (! x) ms) (? a)) ->
-       forall (Gamma : repo) (t : term) (t0 : type),
-       long_ty_P Gamma t t0 -> P Gamma t t0 :=
-       fun P icase ecase => 
-       fix long_ty_ind'_rec (Gamma : repo) (t : term) (t0 : type) 
-        (proof : long_ty_P Gamma t t0) {struct proof} : P Gamma t t0 :=
-            match proof with
-            | Long_I_P _ s A B proof' => icase Gamma s A B proof' 
-                    (long_ty_ind'_rec (A :: Gamma) s B proof')
-            | Long_E_P _ x ms ts a eqproof longrelproof => 
-               ecase Gamma x ms ts a eqproof longrelproof
-                 ((fix long_rel_ind'_rec (ms : list term) (ts : list type) 
-                   (proof : long_rel_P Gamma ms ts) {struct proof} 
-                     : Forall2 (P Gamma) ms ts :=
-                  match proof with
-                  | lr_atom_P _ => Forall2_nil _
-                  | lr_cons_P _ m t ms ts long_ty_proof long_rel_proof =>
-                          @Forall2_cons _ _ _ m t ms ts (long_ty_ind'_rec Gamma m t long_ty_proof)
-                            (long_rel_ind'_rec ms ts long_rel_proof)
-                  end) ms ts longrelproof )
-            end.
-
-
-Lemma long_rel_iff_Forall2_P : forall Gamma ms ts, long_rel_P Gamma ms ts <-> Forall2 (long_ty_P Gamma) ms ts.
-Proof.
-  intros Gamma ms ts.
-  split; induction 1; constructor; try constructor; assumption.
-Qed.
-
 
 Lemma Forall2_if_long_rel_T : forall Gamma ms ts, long_rel_T Gamma ms ts -> Forall2_T (long_ty_T Gamma) ms ts.
 Proof.
@@ -141,32 +88,6 @@ Lemma Forall2_inh {B C}: forall (A : B -> C -> Type) ms ts, Forall2 (fun a b => 
       + assumption.
   Qed.
 
-
-Lemma long_ty_inh : forall Gamma m tau, long_ty_P Gamma m tau <-> inhabited (long_ty_T Gamma m tau).
-Proof.
-  intros.
-  split.
-  - revert Gamma m tau. induction 1 using long_ty_P_ind'.
-    + ainv. constructor. constructor. assumption.
-    + apply Forall2_inh in H1. inversion H1. constructor. econstructor.
-      * apply H.
-      * apply long_rel_if_Forall2_T. apply X.
-  - apply inhabited_ind. revert Gamma m tau.
-    fix ih 4.
-    intros.
-    destruct X.
-    + constructor. apply ih. assumption.
-    + econstructor.
-      * apply e.
-      * clear e. revert ms ts l. fix ih2 3. intros. destruct l.
-        ** constructor.
-        ** constructor.
-           { apply ih. assumption. }
-           { apply ih2.
-             - assumption.
-           }
-Qed.
-
 Lemma mkArrow_curry_ty_T : forall Gamma ms ts a ,
     Forall2_T (fun m t => ty_T Gamma m t) ms ts
     -> forall x, ty_T Gamma x (make_arrow_type ts a)
@@ -188,8 +109,8 @@ Proof.
       + constructor. assumption.
 Qed.
 
-Definition is_long_ty (t: term) (ty: type) := long_ty_P [] t ty.
-Definition is_ty (t: term) (typ : type) := ty_P [] t typ.
+Definition is_long_ty (t: term) (ty: type) := long_ty_T [] t ty.
+Definition is_ty (t: term) (typ : type) := ty_T [] t typ.
 
 Lemma long_ty_var_T : forall Gamma x t, nth_error Gamma x = Some (? t) -> long_ty_T Gamma (! x) (? t).
 Proof.

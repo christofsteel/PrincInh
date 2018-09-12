@@ -38,7 +38,7 @@ Proof.
       + destruct (IHx1 y1); dec_eq.
         { destruct (IHx2 y2); dec_eq. }
 Defined.
-
+(*
 Lemma type_eq_dec : forall (t t':type), {t = t'} + {t <> t'}.
 Proof.
     induction t.
@@ -55,7 +55,7 @@ Proof.
           - right. isfalse. }
         { right. isfalse. }
 Defined.
-
+*)
 Definition mtTy {A} : var -> option A := fun x => None.
 
 Instance eq_dec_option : forall T, EqDec T eq -> EqDec (option T) eq.

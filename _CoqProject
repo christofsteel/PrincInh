@@ -4,7 +4,6 @@ PrincInh/Utils.v
 PrincInh/Terms.v
 PrincInh/TypesCommon.v
 PrincInh/TypesType.v
-PrincInh/TypesProp.v
 PrincInh/NFTerms.v
 PrincInh/Long.v
 PrincInh/Filtr.v

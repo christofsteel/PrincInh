@@ -9,7 +9,6 @@ Require Import Omega.
 Require Import PrincInh.Terms.
 Require Import PrincInh.TypesCommon.
 Require Import PrincInh.TypesType.
-Require Import PrincInh.TypesProp.
 Require Import PrincInh.NFTerms.
 Require Import PrincInh.Utils.
 Require Import PrincInh.Paths.
