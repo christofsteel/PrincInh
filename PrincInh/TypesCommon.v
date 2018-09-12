@@ -416,8 +416,6 @@ Fixpoint wrap_lam (n : nat) (m : term) : term :=
   | S n =>  \_ (wrap_lam n (rename (+1) m) @ !0)
   end.
 
-Compute (wrap_lam 2 tI).
-
 (*
 Fixpoint eta_expand (arities : var -> nat ) (m : term) : term :=
   match m with

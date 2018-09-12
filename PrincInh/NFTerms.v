@@ -61,7 +61,6 @@ Qed.
 Notation "'!!' x '@@' ms" := (NFcurr ms x) (at level 31, left associativity).
 Notation "'\__' s" := (NFLam s) (at level 35, right associativity).
 
-Compute (rename S (\__ !! 0 @@[])).
 (* Instance Subst_term : Subst nfterm := fun sigma =>
 fix dummy (s : nfterm) {struct s} : nfterm :=
   match s as n return (annot nfterm n) with
@@ -310,8 +309,6 @@ Fixpoint max_fvar (m: nfterm) : var :=
   | !! x @@ ms => fold_left Nat.max (map max_fvar ms) (S x)
   | \__ s => pred (max_fvar s)
   end.
-
-Compute (max_fvar (\__ (!!0 @@ [!!0 @@ []]))).
 
 Definition all_var_in_repo {A} m (Delta : list A) := max_fvar m < S (length Delta).
 

@@ -65,9 +65,6 @@ Fixpoint update_list {A} (l1 : list A) (Su : nat -> option A) : list A :=
               end :: update_list xs (fun x => (Su (S x)))
   end.
 
-Compute (update_list [1;2;3;4;5;6] (fun x => if x == 3 then Some 99 else None)).
-
-
 Lemma ty_ren_T Gamma s A:
   ty_T Gamma s A -> forall Delta xi,
     (forall n, nth_error Gamma n = (xi >>> nth_error Delta) n) ->

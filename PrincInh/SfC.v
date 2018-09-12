@@ -518,10 +518,6 @@ Definition R_m_ts m := match R_m m with
                        | Some Rmm => ts_cl_list (Rmm)
                        end.
 
-Compute (R_m (\__\__ !!1 @@[])).
-Compute (R_m (\__(!!0 @@ [\__  !!1 @@ [\__ !!1 @@ []]]))).
-
-
 Lemma combine_with_Rstuff : forall pi Delta, (fix combine_with (ms : list nfterm) (ns : list nat) {struct ms} :
                    list (option (list (path * path))) :=
                    match ms with
@@ -1002,9 +998,6 @@ Definition R_tau_cond (tau: type) (pipi' : path * path) : bool :=
 Definition R_tau_list tau :=
   filter (R_tau_cond tau)
   (list_prod (dom_P tau) (dom_P tau)).
-
-Compute (R_tau_list (? 0 ~> ? 0)).
-Compute (R_tau_list (? 0 ~> ? 1 ~> ? 1)).
 
 (* Another Definition of R_tau *)
 Inductive R_tau (tau: type) : path -> path -> Type :=

@@ -5,8 +5,6 @@ Require Import Coq.omega.Omega.
 Require Import Datatypes.
 Require Import Omega.
 
-Require Import Autosubst.Autosubst.
-
 Import ListNotations.
 Import EqNotations.
 
@@ -30,11 +28,9 @@ Lemma ge_0_eq : forall m, 0 >= m -> 0 = m. Proof. intros. omega. Qed.
 
 Lemma Odd_plus_Even_is_Odd : forall n m, Nat.Odd n -> Nat.Even m -> Nat.Odd (n + m).
 Proof.
-  intros.
-  unfold Nat.Odd in *.
-  unfold Nat.Even in H0.
-  ainv.
-  exists (x + x0).
+  intros n m [n' Hodd] [m' Heven].
+  unfold Nat.Odd. 
+  exists (n' + m').
   omega.
 Qed.
 
@@ -123,9 +119,9 @@ Qed.
 Lemma in_map_cons {A} : forall (x : A) xs ys, In (x::xs) (map (cons x) ys) -> In xs ys.
 Proof.
   induction ys.
-  - ainv.
-  - asimpl in *. destruct H.
-    + left. ainv.
+  - auto.
+  - simpl in *. intros. destruct H.
+    + left. inversion H. reflexivity.
     + right. apply IHys. assumption.
 Qed.
 
@@ -144,18 +140,16 @@ Proof.
   - apply in_map_cons.
   - intros. induction ys.
     + inversion H.
-    + asimpl. destruct H.
+    + simpl. destruct H.
       * left. subst. reflexivity.
       * right. apply IHys. apply H.
 Qed.
 
-
 Lemma some_eq : forall (T : Type) (a b : T), a = b <-> Some a = Some b.
 Proof. intros. split.
   - intros Heq. subst. reflexivity.
-  - intros Heq. ainv.
+  - intros Heq. inversion Heq. reflexivity.
 Qed.
-
 
 Inductive Forall_T {A : Type} (P : A -> Type) : list A -> Type :=
 | Forall_T_nil : Forall_T P nil
@@ -167,9 +161,9 @@ Proof.
   induction 1;intros.
   - inversion H.
   - destruct (x == x0).
-    + ainv.
+    + rewrite e in p. assumption.
     + apply IHX.
-      inv H.
+      inversion H.
       * pose proof (Equivalence.equiv_reflexive_obligation_1 _ x0). contradiction.
       * assumption.
 Qed.
@@ -645,7 +639,7 @@ Proof.
     intros.
     induction ms.
     - reflexivity.
-    - ainv.
+    - simpl in H. discriminate H.
 Qed.
 
 Lemma list_nonmt_split {T: Type} : forall (ms : list T), ms <> nil <-> exists head tail, ms = head :: tail. 
@@ -656,7 +650,9 @@ Proof.
       assert (hd_error ms = Some t /\ tl ms = tail). auto.
       apply hd_error_tl_repr in H0. assumption.
       + eapply hd_none_impl_nil in he. contradiction.
-    - intros. ainv. intros F. ainv.
+    - intros.
+      destruct H as [head [tail Heq]].
+      intros F. subst. discriminate F.
 Qed.
 
 Fixpoint enumerate_aux {T : Type} (ls : list T) (start : nat) : list (nat * T) :=
@@ -679,10 +675,10 @@ Lemma list_split_rev {A}: forall (ms : list A), (exists mshead mstail, ms = mshe
 Proof.
   intros. split.
   + intros. destruct H as [hd [tl mssplit]]. assert (ms <> nil). 
-    { ainv. isfalse. }
-    apply exists_last in H. ainv. exists x. exists x0. assumption.
+    { intros F. subst. discriminate F. }
+    apply exists_last in H. destruct H as [x  [x0 Heq]]. exists x. exists x0. assumption.
   + intros. destruct H as [init [tail mssplit]]. destruct ms.
-    - symmetry in mssplit. apply app_eq_nil in mssplit. ainv.
+    - symmetry in mssplit. apply app_eq_nil in mssplit. destruct mssplit. subst. discriminate H0.
     - exists a. exists ms. reflexivity.
 Qed.
 
@@ -755,7 +751,7 @@ Proof.
     + simpl. intros [|h l] p a; try solve [inversion p].
       simpl in *. apply IHn.
   - revert n l p a. induction n.
-    + simpl. intros [|h l] p a; intros H; try solve [inversion p]; try inv H; try reflexivity.
+    + simpl. intros [|h l] p a; intros H; try solve [inversion p]; try (inversion H; subst); try reflexivity.
     + simpl. intros [|h l] p a; intros H; try solve [inversion p]. simpl in *. apply IHn. assumption.
 Qed.
 
@@ -768,7 +764,9 @@ Proof.
   symmetry in HeqHb.
   rewrite nth_ok_nth_error in HeqHa.
   rewrite nth_ok_nth_error in HeqHb.
-  rewrite nth_error_map in HeqHa. destruct (nth_error l n); ainv.
+  rewrite nth_error_map in HeqHa. destruct (nth_error l n).
+  - inversion HeqHb. inversion HeqHa. subst. reflexivity.
+  - discriminate HeqHa.
 Qed.
 
 Definition tuple_dec {A} {eqdec : EqDec A eq} := prod_eqdec eqdec eqdec.
@@ -805,13 +803,13 @@ Qed.
 Lemma in_ex_dec {A} {eqdec : EqDec A eq} (a : A) R : {c & In (a, c) R} + {forall c :A, In (a, c) R -> False}.
 Proof.
   induction R.
-  - right. ainv.
+  - right. intros. inversion H.
   - destruct IHR.
     + destruct s. left. exists x. constructor 2. assumption.
     + destruct (a == fst a0).
-      * left. exists (snd a0). constructor. ainv. apply surjective_pairing. 
+      * left. exists (snd a0). constructor. rewrite e. apply surjective_pairing. 
       * right. intros. inversion H.
-        -- assert (a = fst a0). ainv. contradiction.
+        -- assert (a = fst a0). subst. reflexivity. contradiction.
         -- pose proof f c0. contradiction.
 Defined.
 (*
@@ -967,9 +965,9 @@ Definition sym_hull_list {A} (R: list (A * A)) : list (A * A) :=
 Lemma In_flipped {A B}: forall (R : list (A * B)) a b, In (a, b) R -> In (b, a) (flipped R).
 Proof.
   induction R.
-  - ainv.
-  - ainv. destruct H.
-    + simpl. left. ainv.
+  - intros. inversion H.
+  - intros. destruct H.
+    + simpl. left. subst. reflexivity.
     + constructor 2. apply IHR. assumption.
 Qed.
 
@@ -1004,9 +1002,9 @@ Lemma diag_codom_eq {A} (R : list (A * A)) a b : In (a, b) (diag_codom R) ->
 Proof.
   intros. unfold diag_codom in H.
   induction R.
-  - ainv.
-  - asimpl in H. destruct H.
-    + injection H. ainv.
+  - inversion H.
+  - simpl in H. destruct H.
+    + inversion H. reflexivity.
     + apply IHR. apply H.
 Qed.
 
@@ -1014,9 +1012,9 @@ Lemma diag_dom_in_dec {A} {eqdec: EqDec A eq} (R: list (A * A))
   : forall a b, In (a, b) (diag_dom R) -> {c & In (a, c) R}.
 Proof.
   induction R.
-  - ainv.
+  - intros. inversion H.
   - intros. unfold diag_dom in H. simpl map in H. apply In_head_set in H. destruct H.
-    + ainv. exists (snd a). constructor. apply surjective_pairing.
+    + inversion e. subst. exists (snd a). constructor. apply surjective_pairing.
     + apply IHR in i. destruct i. eexists. constructor 2. exact i.
 Qed.
 
@@ -1024,9 +1022,9 @@ Lemma diag_codom_in_dec {A} {eqdec: EqDec A eq} (R: list (A * A))
   : forall a b, In (a, b) (diag_codom R) -> {c & In (c, a) R}.
 Proof.
   induction R.
-  - ainv.
+  - intros. inversion H.
   - intros. unfold diag_codom in H. simpl map in H. apply In_head_set in H. destruct H.
-    + ainv. exists (fst a). constructor. apply surjective_pairing.
+    + inversion e. exists (fst a). constructor. apply surjective_pairing.
     + apply IHR in i. destruct i. eexists. constructor 2. exact i.
 Qed.
 
@@ -1035,9 +1033,9 @@ Lemma diag_dom_eq {A} (R : list (A * A)) a b : In (a, b) (diag_dom R) ->
 Proof.
   intros. unfold diag_dom in H.
   induction R.
-  - ainv.
-  - asimpl in H. destruct H.
-    + injection H. ainv.
+  - inversion H.
+  - simpl in H. destruct H.
+    + inversion H. reflexivity.
     + apply IHR. apply H.
 Qed.
 
@@ -1048,10 +1046,10 @@ Proof.
   induction R.
   - reflexivity.
   - intros. split.
-    + asimpl. intros. destruct H.
+    + simpl. intros. destruct H.
       * left. assumption.
       * right. apply IHR. apply H.
-    + asimpl. intros. destruct H.
+    + simpl. intros. destruct H.
       * left. assumption.
       * right. apply IHR. apply H.
 Qed.
@@ -1124,13 +1122,13 @@ Proof.
   intros.
   induction X.
   - induction R.
-    + ainv.
+    + inversion i.
     + unfold sym_hull_list in i. apply In_app_sumbool in i. destruct i.
       * apply In_head_set in i. destruct i.
         -- subst. constructor. constructor. reflexivity.
         -- constructor. constructor 2. assumption.
       * unfold flipped in i. simpl map in i. apply In_head_set in i. destruct i.
-        -- constructor 4. constructor. inv e. constructor. destruct a0. reflexivity.
+        -- constructor 4. constructor. inversion e. subst. constructor. destruct a0. reflexivity.
         -- apply eq_cl_list_pump. apply IHR. unfold sym_hull_list. apply in_or_app. right. assumption.
   - apply In_sym_list_dec in i. destruct i.
     + econstructor 2. apply i.
@@ -1240,23 +1238,23 @@ Proof.
     assumption.
   - constructor. unfold refl_hull. apply in_or_app. right. apply in_or_app.
     left. unfold diag_dom. induction R.
-    + ainv.
+    + inversion i.
     + destruct i.
-      * ainv. left. reflexivity.
+      * simpl. left. subst. reflexivity.
       * right. rewrite map_app. apply in_or_app. left. clear IHR. induction R.
-        -- ainv.
-        -- asimpl. destruct H.
-           ++ left. destruct a1. injection H. ainv.
+        -- inversion H.
+        -- simpl. destruct H.
+           ++ left. destruct a1. injection H. intros. subst. reflexivity.
            ++ right. apply IHR. assumption.
   - constructor. unfold refl_hull. apply in_or_app. right. apply in_or_app.
     right. unfold diag_codom. induction R.
-    + ainv.
+    + inversion i.
     + destruct i.
-      * ainv. left. reflexivity.
+      * simpl. left. subst. reflexivity.
       * right. rewrite map_app. apply in_or_app. left. clear IHR. induction R.
-        -- ainv.
-        -- asimpl. destruct H.
-           ++ left. destruct a1. injection H. ainv.
+        -- inversion H.
+        -- simpl. destruct H.
+           ++ left. destruct a1. inversion H. reflexivity.
            ++ right. apply IHR. assumption.
   - apply trans_refl_sym_is_sym2. assumption.
   - econstructor 2. apply IHX1. assumption.
@@ -1302,7 +1300,7 @@ Inductive tr_path {A} (R: list (A *A)) : list (A * A) -> A -> A -> Type :=
 Lemma t_path_nil {A} : forall (a b : A) p, t_path [] p a b -> False.
 Proof.
   intros.
-  induction X. ainv. ainv.
+  induction X; inversion i.
 Qed.
 
 Lemma t_path_0 {A} : forall (a b : A) R, t_path R [] a b -> False.
@@ -1337,10 +1335,10 @@ Qed.
 Lemma t_path_trans2 {A} : forall P P' (a b c: A) R , t_path R P a b -> t_path R P' b c -> t_path R (P ++ P') a c.
 Proof.
   induction P; intros.
-  - ainv.
+  - inversion X.
   - destruct a. pose proof t_path_start _ _ _ _ _ _ X. subst.
     pose proof t_path_P_in_R _ _ _ _ X a0 a1 (in_eq _ _).
-    asimpl. pose proof t_path_Sn _ _ _ _ _ X as [[Hin Htr]|[Heq [Hnil Hin]]].
+    simpl. pose proof t_path_Sn _ _ _ _ _ X as [[Hin Htr]|[Heq [Hnil Hin]]].
     + constructor 2.
       * assumption.
       * eapply IHP. apply Htr. assumption.
@@ -1389,7 +1387,7 @@ Definition ex_in_rel {A} (a : A) R : Type := ({c & In (a,c) R} + {c & In (c, a) 
 Lemma ex_in_rel_dec {A} {eqdec : EqDec A eq} : forall R (a : A), ex_in_rel a R + (ex_in_rel a R -> False).
 Proof.
   induction R.
-  - intros. right. intros. unfold ex_in_rel in X. destruct X; ainv.
+  - intros. right. intros. unfold ex_in_rel in X. destruct X as [[c Hin] | [c Hin]]; inversion Hin.
   - intros. destruct (IHR a0).
     + left. unfold ex_in_rel. destruct e as [[c H]|[c H]].
       * left. exists c. constructor 2. assumption.
@@ -1400,10 +1398,10 @@ Proof.
         -- rewrite e. left. left. exists a1. constructor. reflexivity.
         -- right. intros. destruct X as [[c' H]|[c' H]].
            ++ apply In_head_set in H. destruct H.
-              ** ainv. apply c0. reflexivity.
+              ** inversion e. subst. apply c0. reflexivity.
               ** apply f. left. exists c'. assumption.
            ++ apply In_head_set in H. destruct H.
-              ** ainv. apply c. reflexivity.
+              ** inversion e. subst. apply c. reflexivity.
               ** apply f. right. exists c'. assumption.
 Defined.
 
@@ -1481,20 +1479,20 @@ Proof.
   intros.
   induction X.
   - apply In_head_set in i. destruct i.
-    + ainv. left. left. left. right. auto.
+    + inversion e. subst. left. left. left. right. auto.
     + left. left. left. left. eexists. constructor. assumption.
   - apply In_head_set in i. destruct i.
-    + destruct IHX as [[[[[P Htr]| Heq]| [P [Htr Heq]]]| [P [Htr Heq]]]| [P1 [P2 [Htr1 Htr2]]]].
-      * ainv. left. right. eexists. split. apply Htr. reflexivity.
-      * ainv. left. left. left. right. reflexivity.
-      * ainv. left. left. left. right. reflexivity.
-      * ainv. left. right. eexists. split. apply Htr. reflexivity.
-      * ainv. left. right. eexists. split. apply Htr2. reflexivity.
+    + destruct IHX as [[[[[P Htr]| Heq]| [P [Htr Heq]]]| [P [Htr Heq]]]| [P1 [P2 [Htr1 Htr2]]]]; inversion e; subst.
+      * left. right. eexists. split. apply Htr. reflexivity.
+      * left. left. left. right. inversion Heq. subst. assumption.
+      * left. left. left. right. reflexivity.
+      * left. right. eexists. split. apply Htr. reflexivity.
+      * left. right. eexists. split. apply Htr2. reflexivity.
     + destruct IHX as [[[[[P Htr]| Heq]| [P [Htr Heq]]]| [P [Htr Heq]]]| [P1 [P2 [Htr1 Htr2]]]].
       * left. left. left. left. eexists. econstructor 2. apply i. apply Htr.
-      * ainv. left. left. right. eexists. split. constructor. assumption. reflexivity.
-      * ainv. left. left. right. eexists. split. econstructor 2. apply i. apply Htr. reflexivity.
-      * ainv. right. eexists. eexists. split. constructor. assumption. apply Htr.
+      * inversion Heq. subst. left. left. right. eexists. split. constructor. assumption. reflexivity.
+      * left. left. right. eexists. split. econstructor 2. apply i. apply Htr. assumption.
+      * right. eexists. eexists. split. constructor. subst. assumption. apply Htr.
       * right. eexists. eexists. split. constructor 2. apply i. apply Htr1. apply Htr2.
 Qed.
 (*
@@ -1541,7 +1539,7 @@ Proof.
   destruct pdec as [[p HP]| HP].
   - destruct qdec.
     + left. exists p. split; assumption.
-    + right. intros. apply f. ainv.
+    + right. intros. apply f. destruct X. assumption.
   - right. intros. eapply HP. destruct X. apply p0.
 Defined.
 
@@ -1552,15 +1550,15 @@ Proof.
   - destruct (IHR a0 b) as [[P IH] | H1].
     {left. eexists. apply t_path_pump. apply IH. }
     destruct a. destruct ((a, a1) == (a0, b)).
-    {left. ainv. eexists. constructor. constructor. reflexivity. }
+    {left. inversion e. subst. eexists. constructor. constructor. reflexivity. }
     destruct (@prod_dec_ex _ (fun P => t_path R P a0 a) (a1 = b) (IHR a0 a)).
     { destruct (a1 == b). rewrite e. left. reflexivity. right. intros. contradiction. }
-    { destruct s as [p [Htr Heq]]. ainv. left. eexists. eapply t_path_trans2.
+    { destruct s as [p [Htr Heq]]. subst. left. eexists. eapply t_path_trans2.
       - apply t_path_pump. apply Htr.
       - constructor. constructor. reflexivity. }
     destruct (@prod_dec_ex _ (fun P => t_path R P a1 b) (a0 = a) (IHR a1 b)).
     { destruct (a0 == a). rewrite e. left. reflexivity. right. intros. contradiction. }
-    { destruct s as [p [Htr Heq]]. ainv. left. eexists. eapply t_path_trans2.
+    { destruct s as [p [Htr Heq]]. subst. left. eexists. eapply t_path_trans2.
       - constructor. constructor. reflexivity.
       - apply t_path_pump. apply Htr. }
     destruct (t_path_trans_dec _ a0 b a a1 IHR) as [[P1 [P2 [Ht1 Ht2]]]|]. left.
@@ -1570,8 +1568,8 @@ Proof.
     pose proof t_path_trans_R_and _ _ _ _ _ _ X as [[[[[P' Htr]| Heq]| [P' [Htr Heq]]]| [P' [Htr Heq]]]| [P1 [P2 [Htr1 Htr2]]]].
     + eapply H1. apply Htr.
     + contradiction.
-    + eapply f. split. apply Htr. ainv.
-    + eapply f0. split. apply Htr. ainv.
+    + eapply f. split. apply Htr. subst. reflexivity.
+    + eapply f0. split. apply Htr. assumption.
     + eapply f1. split. apply Htr1. apply Htr2.
 Defined.
 
@@ -1905,7 +1903,7 @@ Qed.
 *)
 Lemma eq_cl_nil_impl_refl {A} : forall (a b :A), eq_cl_list [] a b -> a = b.
 Proof.
-  induction 1; ainv; reflexivity.
+  induction 1; try inversion i; subst; reflexivity.
 Qed.
 
 (*
@@ -1948,21 +1946,6 @@ Proof.
   auto.
 Qed.
 
-Lemma mmap_length {A} : forall ms (f : A -> A), length ms = length (mmap f ms).
-Proof.
-  intros.
-  induction ms.
-  - reflexivity.
-  - simpl. apply eq_S. exact IHms.
-Qed.
-
-Lemma map_mmap {A} : forall ms (f : A -> A), map f ms = mmap f ms.
-Proof.
-  intros.
-  induction ms.
-  - reflexivity.
-  - simpl. rewrite IHms. reflexivity.
-Qed.
 
 Definition combine_with {A B C} (f: A -> B -> C) := fix dummy (l:list A) (l' :list B) : list C :=
     match l with
@@ -1977,10 +1960,10 @@ Definition combine_with {A B C} (f: A -> B -> C) := fix dummy (l:list A) (l' :li
 Lemma nth_error_combine {A B} : forall n a b (x : A) (y : B), nth_error (combine a b) n = Some (x, y) ->
       nth_error a n = Some x /\ nth_error b n = Some y.
   induction n; intros.        
-  - ainv. destruct a; destruct b; try discriminate H0.
-    asimpl in *. ainv. split; reflexivity.
-  - ainv. destruct a; destruct b; try discriminate H0.
-    asimpl in *. apply IHn in H0. assumption.
+  - inversion H. destruct a; destruct b; try discriminate H1.
+    simpl in *. inversion H. subst. split; reflexivity.
+  - inversion H. destruct a; destruct b; try discriminate H1.
+    simpl in *. apply IHn in H1. assumption.
 Qed.
 
 
@@ -2006,7 +1989,7 @@ Proof.
   unfold EqDec.
   intros.
   destruct x; destruct y; try destruct (a == a0) eqn:Haa.
-  - left. ainv. reflexivity.
+  - left. inversion e. reflexivity.
   - right. intros F. apply some_eq in F. contradiction.
   - right. intros F. discriminate F.
   - right. intros F. discriminate F.
@@ -2025,13 +2008,13 @@ Lemma all_some_some {A} {eq_dec : EqDec A eq} : forall ls l (x : option (A)), al
                                                              { y & x = Some y /\ In y l }.
 Proof.
   induction ls.
-  - intros. inv H0.
+  - intros. inversion H0.
   - intros. simpl in H.
     destruct a eqn:Ha; try discriminate H.
     destruct (all_some ls) eqn:Hls; try discriminate H.    
     apply some_eq in H.
     destruct (option_eqdec x a).
-    + ainv. exists a0. split. reflexivity. constructor. reflexivity.
+    + subst. exists a0. split. rewrite e. reflexivity. constructor. reflexivity.
     + apply in_not_first in H0; try (rewrite <- Ha; intros F; symmetry in F; contradiction).
       pose proof (IHls l0 x eq_refl H0). subst. destruct X as [y [Hx Hin]].
       exists y. split. assumption. constructor 2. assumption.
@@ -2039,7 +2022,7 @@ Qed.
 
 Lemma all_some_none_head {A} (a : A) ls : all_some (Some a :: ls) = None -> all_some ls = None.
 Proof.
-  asimpl.
+  simpl.
   intros.
   destruct (all_some ls); try discriminate H. reflexivity.
 Qed.
@@ -2048,13 +2031,13 @@ Lemma all_some_none_last {A} (a : A) ls : all_some (ls ++ [Some a]) = None -> al
 Proof.
   intros.
   induction ls.
-  - asimpl in H. discriminate H.
+  - simpl in H. discriminate H.
   - simpl in H. destruct a0.
     destruct (all_some (ls ++ [Some a])).
     + discriminate H.
     + apply IHls in H.
       simpl. rewrite H. reflexivity.
-    + asimpl. reflexivity.
+    + reflexivity.
 Qed.
 
 Lemma all_some_some_app_l {A} (l1 l2 : list (option A)) l3 : all_some (l1 ++ l2) = Some l3 ->
@@ -2062,12 +2045,12 @@ Lemma all_some_some_app_l {A} (l1 l2 : list (option A)) l3 : all_some (l1 ++ l2)
 Proof.
   revert l3.
   induction l1.
-  - asimpl. exists []. reflexivity.
-  - intros. asimpl. rewrite <- app_comm_cons in H. destruct a  eqn:Ha.
-    + asimpl in H.
+  - simpl. exists []. reflexivity.
+  - intros. simpl. rewrite <- app_comm_cons in H. destruct a  eqn:Ha.
+    + simpl in H.
       destruct (all_some (_ ++ _)); try discriminate H. pose proof (IHl1 l eq_refl). destruct H0.
       rewrite H0. eexists. reflexivity.
-    + asimpl in H. discriminate H.
+    + simpl in H. discriminate H.
 Qed.
 
 Lemma all_some_forall_eq {A} {eqdec : EqDec A eq} (l : list (option A)) sl : all_some l = Some sl ->
@@ -2100,7 +2083,7 @@ Qed.
 Lemma in_concat {A} : forall l (x : A), In [x] l -> In x (concat l).
 Proof.
  induction l.
- - ainv.
+ - intros. inversion H.
  - simpl. intros x [Heq | Hin].
    + subst. constructor. reflexivity.
    + apply in_or_app. right. apply IHl. assumption.
@@ -2111,7 +2094,7 @@ Lemma combine_with_map {A B C}: forall ms ns (f : A -> B -> C),
 Proof.
   induction ms.
   - reflexivity.
-  - intros. destruct ns. {ainv. }
+  - intros. destruct ns. { reflexivity. }
     simpl. rewrite IHms. reflexivity.
 Qed.
 
@@ -2150,13 +2133,13 @@ Proof.
   intros.
   split.
   - intros [HA HB]. subst. reflexivity.
-  - intros. ainv. split; reflexivity.
+  - intros. inversion H. subst. split; reflexivity.
 Qed.
 
 Lemma equivb_prop {A} {eqdec : EqDec A eq} : forall (a b : A), a ==b b = true <-> a = b.
 Proof.
   intros. split; intros.
-  - unfold equiv_decb in H. destruct (a == b); ainv.
+  - unfold equiv_decb in H. destruct (a == b). inversion e. subst. reflexivity. discriminate H.
   - subst. unfold equiv_decb. destruct (equiv_dec b b).
     + reflexivity.
     + unfold complement in c. exfalso. apply c. reflexivity.
@@ -2165,7 +2148,7 @@ Qed.
 Lemma nequivb_prop {A} {eqdec : EqDec A eq} : forall (a b : A), a <>b b = true <-> a <> b.
 Proof.
   intros. split; intros; unfold nequiv_decb in *.
-  - apply Bool.negb_true_iff in H. unfold equiv_decb in H. destruct (a == b); ainv.
+  - apply Bool.negb_true_iff in H. unfold equiv_decb in H. destruct (a == b). inversion H. assumption.
   - apply Bool.negb_true_iff. unfold equiv_decb. destruct (a == b).
     + contradiction.
     + reflexivity.
@@ -2218,8 +2201,7 @@ Qed.
 Lemma list_cons_eq {A} : forall (x : A) l1 l2, l1 = l2 <-> x::l1 = x::l2.
 Proof.
   intros.
-  split;
-  ainv.
+  split; intros; subst. reflexivity. inversion H. reflexivity.
 Qed.
 
 Lemma cons_app {A} : forall (a : A) l, a :: l = [a] ++ l.
@@ -2232,7 +2214,7 @@ Lemma forallb_existsb {A} : forall P (ls : list A), forallb P ls = false -> exis
 Proof.
   intros.
   induction ls.
-  - ainv.
+  - inversion H.
   - simpl. apply Bool.orb_true_intro.
     simpl in H. apply Bool.andb_false_iff in H as [H1 | H2].
     + left. rewrite H1. reflexivity.
@@ -2265,15 +2247,15 @@ Ltac bsplit := apply andb_true_intro; split.
 
 Lemma seq_skip : forall n len, seq n (S len) = n :: seq (S n) len.
 Proof.
-  ainv.
+  reflexivity.
 Qed.
 
 Lemma nth_error_map_range {A} : forall n (f : nat -> A) lms, n < lms -> 
     nth_error (map f (range lms)) n = Some (f n).
 Proof.
   induction n.
-  - intros. unfold range. destruct lms. {ainv. } reflexivity.
-  - intros. unfold range. simpl. destruct lms. {ainv. } simpl.
+  - intros. unfold range. destruct lms. {inversion H. } reflexivity.
+  - intros. unfold range. simpl. destruct lms. {inversion H. } simpl.
     rewrite <- seq_shift. rewrite map_map. rewrite IHn.
     + reflexivity.
     + auto with arith.
@@ -2297,14 +2279,14 @@ Lemma fold_left_max_acc : forall ls i j, fold_left Nat.max ls i < j -> i < j.
 Proof.
   induction ls; intros.
   - assumption.
-  - asimpl in H. apply IHls in H. apply Nat.max_lub_lt_iff in H. destruct H. assumption.
+  - simpl in H. apply IHls in H. apply Nat.max_lub_lt_iff in H. destruct H. assumption.
 Qed.
 
 Lemma fold_left_max_in : forall ls i j, fold_left Nat.max ls i < j -> forall k, In k ls -> k < j.
 Proof.
   induction ls; intros.
   - inversion H0.
-  - asimpl in H0. destruct H0.
+  - simpl in H0. destruct H0.
     + simpl in H. apply fold_left_max_acc in H. apply Nat.max_lub_lt_iff in H. destruct H. subst. assumption.
     + eapply IHls. simpl in H. apply H. assumption.
 Qed.
@@ -2328,7 +2310,7 @@ Qed.
 Lemma all_some_none_exists {A} : forall (ls : list (option A)), all_some ls = None -> In None ls.
 Proof.
   induction ls. 
-  - ainv.
+  - intros F. inversion F.
   - intros. destruct a.
     + apply all_some_none_head in H. apply IHls in H. constructor 2. assumption.
     + constructor. reflexivity.
@@ -2353,28 +2335,28 @@ Proof.
   rewrite nth_error_Some in H0. exists H0.  
   revert ms H H0.
   induction n; intros.
-  - destruct ms. inversion H0. asimpl in H0.
-    asimpl. asimpl in H. apply some_eq in H. assumption.
-  - destruct ms. inversion H0.  asimpl in H. pose proof (IHn ms H (lt_S_n _ _ H0)).
-    asimpl. assumption.
+  - destruct ms. inversion H0. simpl in H0.
+    simpl. simpl in H. apply some_eq in H. assumption.
+  - destruct ms. inversion H0. simpl in H. pose proof (IHn ms H (lt_S_n _ _ H0)).
+    simpl. assumption.
 Qed.
 
 Lemma In_nth_error_set {A} {eqdec : EqDec A eq} l (x : A) : In x l -> { n & nth_error l n = Some x}.
 Proof.
   induction l.
-  - ainv.
+  - intros. inversion H.
   - intros. rewrite app_head in H. apply In_app_sumbool in H. destruct H.
-    + exists 0. asimpl. ainv.
-    + apply IHl in i. destruct i. exists (S x0). ainv.
+    + exists 0. simpl. inversion i. subst. reflexivity. inversion H.
+    + apply IHl in i. destruct i. exists (S x0). rewrite <- e. reflexivity.
 Qed.
 
 Lemma in_map_set {A B} {eqdec : EqDec B eq} {f : A -> B} : forall (l : list A) y, In y (map f l) -> { x & f x = y /\ In x l}.
 Proof.
   induction l.
-  - ainv.
+  - intros. inversion H.
   - intros. rewrite app_head in H. rewrite map_app in H. apply In_app_sumbool in H. destruct H.
-    + exists a. split. ainv. constructor. reflexivity.
-    + apply IHl in i. destruct i as [x [Hf Hin]]. exists x. split. ainv. constructor 2. assumption.
+    + exists a. split. inversion i. assumption. inversion H. constructor. reflexivity.
+    + apply IHl in i. destruct i as [x [Hf Hin]]. exists x. split. assumption. constructor 2. assumption.
 Qed.
 
 Lemma forall_length_in {A} : forall ms (Pr : A -> Prop), (forall n pr, Pr (nth_ok ms n pr)) -> (forall m, In m ms -> Pr m).
@@ -2383,7 +2365,7 @@ Proof.
   - inversion H0.
   - destruct H0.
     + subst. pose proof (H 0 (Nat.lt_0_succ _)).
-      asimpl in H0. assumption.
+      simpl in H0. assumption.
     + apply IHms.
       * intros. pose proof (H (S n) (lt_n_S _ _ pr)).
         rewrite nth_ok_skip in H1.
@@ -2396,7 +2378,7 @@ Lemma option_concat_head {A} : forall (m : list (option (list A))) a oms, option
                                                                       exists omms, option_concat m = Some omms.
 Proof.
   unfold option_concat.
-  asimpl.
+  simpl.
   intros.
   destruct a; try discriminate H.
   destruct (all_some m); try discriminate H.
@@ -2409,8 +2391,8 @@ Lemma all_some_app_l {A} : forall (m1 : list (option A)) m2 ams, all_some (m1 ++
 Proof.
   induction m1.
   - intros. exists []. reflexivity.
-  - intros. asimpl in H. destruct a eqn:Hl; try discriminate H.
-    asimpl. destruct (all_some (m1 ++ m2)) eqn:Hb; try discriminate H.
+  - intros. simpl in H. destruct a eqn:Hl; try discriminate H.
+    simpl. destruct (all_some (m1 ++ m2)) eqn:Hb; try discriminate H.
     apply IHm1 in Hb. destruct Hb. rewrite e. eexists. reflexivity.
 Qed.    
 
@@ -2419,8 +2401,8 @@ Lemma all_some_app_l_sub {A} : forall (m1 : list (option A)) m2 ams, all_some (m
 Proof.
   induction m1.
   - intros. exists []. split. reflexivity. intros. inversion H0.
-  - intros. asimpl in H. destruct a eqn:Hl; try discriminate H.
-    asimpl. destruct (all_some (m1 ++ m2)) eqn:Hb; try discriminate H.
+  - intros. simpl in H. destruct a eqn:Hl; try discriminate H.
+    simpl. destruct (all_some (m1 ++ m2)) eqn:Hb; try discriminate H.
     apply IHm1 in Hb. destruct Hb as [amms [Hall Hin]]. destruct (all_some m1); try discriminate Hall. eexists. split.
     + reflexivity.
     + intros. apply some_eq in H. apply some_eq in Hall. rewrite <- H. destruct H0.
@@ -2438,15 +2420,15 @@ Proof.
     + split.
       * assumption.
       * reflexivity.
-  - intros. rewrite <- app_comm_cons in H. destruct a; try (asimpl in H; discriminate H). asimpl in H.
-    destruct (all_some (m1 ++ m2)) eqn:Hamm; try (asimpl in H; discriminate H).
+  - intros. rewrite <- app_comm_cons in H. destruct a; try (simpl in H; discriminate H). simpl in H.
+    destruct (all_some (m1 ++ m2)) eqn:Hamm; try (simpl in H; discriminate H).
     apply IHm1 in Hamm. destruct Hamm as [ams1 [ams2 [H1 [H2 H3]]]].
     eexists. eexists.
     split.
-    + asimpl. rewrite H1. reflexivity.
+    + simpl. rewrite H1. reflexivity.
     + split.
       * apply H2.
-      * apply some_eq in H. ainv.
+      * apply some_eq in H. subst. reflexivity.
 Qed.
 
 
@@ -2463,8 +2445,8 @@ Qed.
 Lemma in_l_in_concat {A} : forall (x : list A) l, In x l -> (forall i, In i x -> In i (concat l)).
 Proof.
   induction l.
-  - ainv.
-  - intros. asimpl in *. destruct H.
+  - intros F. inversion F.
+  - intros. simpl in *. destruct H.
     + apply in_or_app. left. subst. assumption.
     + apply in_or_app. right. apply IHl.
       * assumption.
@@ -2474,9 +2456,9 @@ Qed.
 Lemma concat_in {A} : forall l1 l2 (x :A), (forall i, In i l1 -> In i l2) -> In x (concat l1) -> In x (concat l2).
 Proof.
   induction l1.
-  - ainv.
+  - intros. inversion H0.
   - intros.
-    asimpl in H0.
+    simpl in H0.
     apply in_app_or in H0.
     destruct H0.
     + eapply in_l_in_concat in H0.
@@ -2547,7 +2529,7 @@ Lemma Rsub_in_concat {A:Type} {eqdec : EqDec A eq} : forall (R : A -> A -> Type)
     (forall m, In m l ->  (Rsub (fun p p' => In (p, p') m) R))  -> Rsub (fun p p' => In (p, p') (concat l)) R.
 Proof.
   induction l.
-  - intros. unfold Rsub. ainv.
+  - intros. unfold Rsub. intros. inversion H.
   - intros. simpl. apply Rsub_in_app.
     + apply X. constructor. reflexivity.
     + apply IHl. intros. apply X. constructor 2. assumption.
@@ -2556,7 +2538,7 @@ Qed.
 Lemma all_some_map2 {A B} {eqdec : EqDec A eq} : forall ms (f: A -> option B) l, all_some (map f ms) = Some l -> forall m, In m ms -> {x & f m = Some x}.
 Proof.
   induction ms.
-  - ainv.
+  - intros. inversion H0.
   - intros. simpl in H. destruct (f a) eqn:Hfa; try discriminate H.
     destruct (all_some _) eqn:Hall; try discriminate H. apply In_head_set in H0. destruct H0.
     + subst. exists b. apply Hfa.
@@ -2569,12 +2551,12 @@ Lemma all_some_map {A B} {eqdec : EqDec B eq} : forall ms (f : A -> option B) l,
     all_some (map f ms) = Some l -> (forall m, In m l -> {n & In n ms /\ f n = Some m}).
 Proof.
   induction ms.
-  - ainv.
-  - intros. asimpl in *. destruct (f a) eqn:Hfa; try discriminate H.
+  - intros. inversion H. subst. exfalso. inversion H0.
+  - intros. simpl in *. destruct (f a) eqn:Hfa; try discriminate H.
     destruct (all_some _) eqn:Hall; try discriminate H. apply some_eq in H.
     pose proof (IHms f _ Hall m).
     rewrite <- H in H0. rewrite app_head in H0. apply In_app_sumbool in H0. destruct H0.
-    + assert (m = b). ainv. subst. exists a. split.
+    + assert (m = b). subst. inversion i. subst. reflexivity. inversion H. subst. exists a. split.
       * left. reflexivity.
       * assumption.
     + apply X in i. destruct i. destruct a0. exists x.
@@ -2586,7 +2568,7 @@ Qed.
 Lemma in_combine_range {A} : forall (ls : list A) a n start pr, (In (a, start + n) (combine ls (seq start (length ls)))) -> nth_ok ls n pr = a.
 Proof.
   intros. rewrite nth_ok_nth_error. apply In_nth_error in H. destruct H as [n0 H]. apply nth_error_combine in H. destruct H.
-  assert (nth_error ls n0 <> None). { intros F. rewrite H in F. ainv. }
+  assert (nth_error ls n0 <> None). { intros F. rewrite H in F. discriminate F. }
   apply nth_error_Some in H1. 
   pose proof (seq_nth_error (length ls) start n0 H1). rewrite H0 in H2. apply some_eq in H2. assert (n = n0). omega.
   subst. assumption.
@@ -2607,19 +2589,19 @@ Qed.
 Lemma all_some_length {A} : forall ls (ls' : list A), all_some ls = Some ls' -> length ls = length ls'.
 Proof.
   induction ls.
-  - ainv.
-  - intros. destruct a; try discriminate H. asimpl in *. destruct (all_some ls) eqn:Hall; try discriminate H.
-    destruct ls'; try discriminate H. apply some_eq in H. rewrite <- H. asimpl. apply eq_S.
+  - intros. inversion H. reflexivity.
+  - intros. destruct a; try discriminate H. simpl in *. destruct (all_some ls) eqn:Hall; try discriminate H.
+    destruct ls'; try discriminate H. apply some_eq in H. rewrite <- H. simpl. apply eq_S.
     apply IHls. reflexivity.
 Qed.
     
 Lemma map_in {A B}: forall ls (f: A -> B) x,  In x ls -> In (f x) (map f ls).
 Proof.
   induction ls.
-  - ainv.
+  - intros. inversion H.
   - intros. destruct H.
-    + asimpl. subst. left. reflexivity.
-    + asimpl. right. apply IHls. assumption.
+    + simpl. subst. left. reflexivity.
+    + simpl. right. apply IHls. assumption.
 Qed.
 
 Lemma nth_ok_in {A} : forall (ls : list A) x pr, In (nth_ok ls x pr) ls.
@@ -2632,15 +2614,15 @@ Lemma all_some_some_head {A} : forall a (a0: A) ls ls0,
     all_some (a :: ls) = Some (a0 :: ls0) -> a = Some a0 /\ all_some ls = Some ls0.
 Proof.
   intros.
-  asimpl in H. destruct a eqn:Ha; try discriminate H. destruct (all_some ls) eqn: Hall; try discriminate H.
-  apply some_eq in H. ainv. split; reflexivity.
+  simpl in H. destruct a eqn:Ha; try discriminate H. destruct (all_some ls) eqn: Hall; try discriminate H.
+  apply some_eq in H. inversion H. split; reflexivity.
 Qed.
 
 Lemma all_some_nth {A} : forall (ls : list (option A)) ls' (Hall : all_some ls = Some ls') x (pr : x < (length ls)),
     nth_ok ls x pr = Some (nth_ok ls' x (rew (all_some_length _ _ Hall) in pr)).
 Proof.
   induction ls.
-  - ainv.
+  - intros. inversion pr.
   - intros. destruct ls'.
     + pose proof (all_some_length _ _ Hall). inversion H.
     + pose proof (all_some_some_head _ _ _ _ Hall) as [Ha Hall2]. destruct x.
@@ -2657,9 +2639,8 @@ Lemma repeat_rev {A} : forall (a :A) n, repeat a (S n) = repeat a n ++ [a].
 Proof.
   induction n.
   - reflexivity.
-  - asimpl. rewrite <- IHn. reflexivity.
+  - simpl. rewrite <- IHn. reflexivity.
 Qed.
-
 
 (*
 Lemma Forall2_impl_rev : forall A B (P : A -> B -> Prop) l1 l2 , Forall2 P l1 l2 -> Forall2 P (rev l1) (rev l2).
