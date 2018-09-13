@@ -3,8 +3,8 @@ Require Import Coq.Lists.List.
 Require Import Autosubst.Autosubst.
 
 Require Import PrincInh.Terms.
-Require Import PrincInh.TypesCommon.
-Require Import PrincInh.TypesType.
+Require Import PrincInh.Types.
+Require Import PrincInh.Typing.
 Require Import PrincInh.Utils.
 
 Import ListNotations.

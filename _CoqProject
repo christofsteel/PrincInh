@@ -2,10 +2,10 @@
 
 PrincInh/Utils.v
 PrincInh/Terms.v
-PrincInh/TypesCommon.v
-PrincInh/TypesType.v
 PrincInh/NFTerms.v
-PrincInh/Long.v
+PrincInh/Types.v
+PrincInh/Typing.v
+PrincInh/LongTyping.v
 PrincInh/Filtr.v
 PrincInh/Paths.v
 PrincInh/SfC.v

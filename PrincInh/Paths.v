@@ -5,7 +5,7 @@ Require Import Coq.Classes.EquivDec.
 Require Import Autosubst.Autosubst.
 Require Import Omega.
 
-Require Import PrincInh.TypesCommon.
+Require Import PrincInh.Types.
 Require Import PrincInh.Utils.
 
 Import ListNotations.

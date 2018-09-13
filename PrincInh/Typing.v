@@ -6,12 +6,15 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 Require Import Autosubst.Autosubst.
 
-Require Import PrincInh.TypesCommon.
+Require Import PrincInh.Types.
 Require Import PrincInh.Terms.
+Require Import PrincInh.NFTerms.
 Require Import PrincInh.Utils.
 
 Import ListNotations.
       
+
+(* Typing relations for terms and nfterms *)
 Inductive ty_T (Gamma : repo) : term -> type -> Type:=
 | Ty_Var x A : nth_error Gamma x = Some A ->
         ty_T Gamma (Var x) A
@@ -19,6 +22,17 @@ Inductive ty_T (Gamma : repo) : term -> type -> Type:=
         ty_T Gamma (Lam s) (Arr A B)
 | Ty_App s t A B : ty_T Gamma s (Arr A B) -> ty_T Gamma t A ->
                    ty_T Gamma (App s t) B.
+
+
+Inductive nfty (Gamma : repo) : nfterm -> type -> Type :=
+| NFTy_lam s sigma tau : nfty (sigma :: Gamma) s tau -> nfty Gamma (\__ s) (sigma ~> tau)
+| NFTy_var x tau ts ms : nth_error Gamma x = Some (make_arrow_type ts tau) ->             
+                         length ms = length ts ->
+                         (forall n (pms : n < length ms) (pts : n < length ts),
+                             nfty Gamma (nth_ok ms n pms) (nth_ok ts n pts)) ->
+             nfty Gamma (!!x @@ ms) tau
+.
+
 
 
 Lemma generation_app_T : forall s t tau (Gamma : repo), ty_T Gamma (s@t) tau ->
@@ -157,3 +171,5 @@ Proof.
     + reflexivity.
     + split; ainv.
 Qed.
+
+

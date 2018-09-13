@@ -6,10 +6,9 @@ Require Import Autosubst.Autosubst.
 Require Import Datatypes.
 Require Import Omega.
 
-Require Import PrincInh.Terms.
-Require Import PrincInh.TypesCommon.
-Require Import PrincInh.TypesType.
+Require Import PrincInh.Types.
 Require Import PrincInh.NFTerms.
+Require Import PrincInh.LongTyping.
 Require Import PrincInh.Utils.
 Require Import PrincInh.Paths.
 

@@ -6,170 +6,40 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 Require Import Autosubst.Autosubst.
 
-Require Import PrincInh.TypesCommon.
 Require Import PrincInh.Terms.
 Require Import PrincInh.Utils.
 
 Import ListNotations.
-      
-Inductive ty_T (Gamma : var -> option type) : term -> type -> Type:=
-| Ty_Var x A : Gamma x = Some A ->
-        ty_T Gamma (Var x) A
-| Ty_Lam s A B : ty_T (Some A .: Gamma) s B ->
-        ty_T Gamma (Lam s) (Arr A B)
-| Ty_App s t A B : ty_T Gamma s (Arr A B) -> ty_deriv_of Gamma t A ->
-                   ty_T Gamma (App s t) B.
 
-Definition ty Gamma m tau := inhabited (ty_deriv_of Gamma m tau).
+Inductive type :=
+| Atom (x: var)
+| Arr (A B : type).
 
-Lemma Ty_Var_lift Gamma x A : Gamma x = Some A -> ty Gamma (Var x) A.
+Instance Ids_type : Ids type. derive. Defined.
+Instance Rename_type : Rename type. derive. Defined.
+Instance Subst_type : Subst type. derive. Defined.
+Instance SubstLemmas_type : SubstLemmas type. derive. Defined.
+
+Notation "'?' x" := (Atom x) (at level 15).
+Notation "a '~>' b" := (Arr a b) (at level 51, right associativity).
+
+Definition repo := list type.
+
+Instance eq_dec_type : EqDec type eq.
 Proof.
-  intros.
-  constructor.
-  constructor.
-  assumption.
-Qed.
+    unfold EqDec.
+    intros x. 
+    induction x.
+    - destruct y.
+      + destruct (x == x0); dec_eq.
+      + right. intros H. ainv.
+    - destruct y.
+      + right. intros H. ainv.
+      + destruct (IHx1 y1); dec_eq.
+        { destruct (IHx2 y2); dec_eq. }
+Defined.
 
-Lemma Ty_Lam_lift Gamma s A B : ty (Some A .: Gamma) s B ->
-                                ty Gamma (Lam s) (Arr A B).
-Proof.
-  intros.
-  revert H.
-  apply inhabited_covariant.
-  subst.
-  apply Ty_Lam.
-Qed.
-
-Lemma Ty_App_lift Gamma s t A B : ty Gamma s (Arr A B) -> ty Gamma t A ->
-                                  ty Gamma (App s t) B.
-Proof.
-  intros H H1.
-  ainv.
-  constructor.
-  econstructor.
-  apply X.
-  assumption.
-Qed.
-
-Lemma generation_app : forall s t tau Gamma, ty Gamma (s@t) tau ->
-                        exists sigma, ty Gamma s (sigma ~> tau)
-                                   /\ ty Gamma t (sigma).
-Proof.
-  intros s t tau Gamma H.
-  ainv.
-  exists A.
-  split; constructor; assumption.
-Qed.
-
-Lemma generation_lam : forall s A Gamma sigma tau, ty Gamma (\_ s) A ->
-                        A = sigma ~> tau ->
-                        ty (Some sigma .: Gamma) s tau.
-Proof.
-  intros.
-  ainv.
-  constructor. subst. assumption.
-Qed.
-
-
-Lemma generation_var : forall x A Gamma, ty Gamma (! x) A ->
-                          Gamma x = Some A.
-Proof.
-  intros.
-  ainv.
-Qed.
-  
-
-Lemma ty_app_ex : forall Gamma (B:type) s t, ty Gamma (App s t) B -> exists A, ty Gamma t A ->
-    ty Gamma s (A ~> B).
-Proof.
-    intros. ainv. exists A. ainv. constructor. assumption.
-Qed.
-
-Lemma ty_deriv_of_ren Gamma s A:
-  ty_deriv_of Gamma s A -> forall Delta xi,
-    Gamma = xi >>> Delta ->
-      ty_deriv_of Delta s.[ren xi] A.
-Proof.
-    induction 1.   
-    - constructor. subst. autosubst.
-    - intros. subst. asimpl. econstructor. eapply IHX. autosubst.
-    - intros. subst. asimpl. econstructor. eapply IHX1. reflexivity.
-                                           eapply IHX2. reflexivity.
-Qed.                                           
-
-Lemma ty_ren Gamma s A:
-  ty Gamma s A -> forall Delta xi,
-    Gamma = xi >>> Delta ->
-      ty Delta s.[ren xi] A.
-Proof.
-  intros.  
-  ainv. eapply ty_deriv_of_ren in X.
-  + unfold ty. constructor. apply X.
-  + reflexivity.
-Qed.
-
-Lemma ty_deriv_of_subst Gamma s A:
-      ty_deriv_of Gamma s A -> forall sigma Delta,
-        (forall x t, Gamma x = Some t -> ty_deriv_of Delta (sigma x) (t)) ->
-          ty_deriv_of Delta s.[sigma] A.
-Proof.
-  induction 1.
-    - intros. simpl. apply X. assumption.
-    - econstructor. eapply IHX. intros [|];
-      asimpl; eauto using ty_deriv_of, ty_deriv_of_ren.
-    - asimpl. eauto using ty_deriv_of.
-Qed.
-
-Ltac inhab_ty := inversion 1 as [HTY]; generalize dependent HTY;
-                 repeat match goal with
-                          [ H: _ |- _ ] => clear H
-
-                        end;
-                 repeat match goal with
-                          [ H: _ |- _ ] => revert H
-
-                        end.
-
-Lemma ty_subst Gamma s A:
-      ty Gamma s A -> forall sigma Delta,
-        (forall x t, Gamma x = Some t -> ty Delta (sigma x) (t)) ->
-        ty Delta s.[sigma] A.
-Proof.  
-  inhab_ty.
-  induction 1.
-  - intros. simpl. apply H. assumption.
-  - intros. eapply Ty_Lam_lift. apply IHHTY.
-    intros [|].
-    + asimpl. intros. apply Ty_Var_lift. simpl. assumption.
-    + intros. asimpl. eapply ty_ren.
-      * apply H. inversion H0. reflexivity.
-      * auto.
-  - asimpl. eauto using Ty_App_lift.
-Qed.
-
-Lemma step_var : forall x s , ~(step (! x) s).
-Proof.
-  ainv.
-  isfalse.
-Qed.
-
-Lemma step_lam : forall s s', step (\_ s) s' -> (forall m, s' = \_ m -> step s m).
-Proof.
-  intros.
-  rewrite H0 in H.
-  ainv.
-Qed.
-
-Definition mtTy : var -> option type := fun x => None.
-
-Definition has_ty (m: term) (tau: type) : Prop :=
-    ty mtTy m tau.
-
-Example ident_typing : has_ty (\_ !0) (?0 ~> ?0).
-Proof.
-    unfold has_ty.
-    constructor. constructor. constructor. reflexivity.
-Qed.
+Definition mtTy {A} : var -> option A := fun x => None.
 
 Instance eq_dec_option : forall T, EqDec T eq -> EqDec (option T) eq.
 Proof.
@@ -209,69 +79,48 @@ Qed.
 Notation "s .?[ sigma ]" := (subst_option sigma s) (at level 2, 
     sigma at level 200, left associativity, format "s .?[ sigma ]") : subst_scope.
 
-Theorem subst_repo_some : forall (Gamma : var -> option type) (Su : var -> type) (a : var) (tau: type),
-    Gamma a = Some tau ->
-    Gamma.?[Su] a = Some tau.[Su].
-Proof.
-    intros.
-    unfold subst_option.
-    rewrite H. reflexivity.
+Lemma some_eq : forall (T : Type) (a b : T), a = b <-> Some a = Some b.
+Proof. intros. split.
+  - intros Heq. subst. reflexivity.
+  - intros Heq. ainv.
 Qed.
 
-Theorem subst_repo_none : forall (Gamma : var -> option type) (Su : var -> type) (a : var),
-    Gamma a = None ->
-    Gamma.?[Su] a = None.
+Theorem subst_repo_some : forall (Gamma : repo) (Su : var -> type) (a : var) (tau: type),
+    nth_error Gamma a = Some tau ->
+    nth_error Gamma..[Su] a = Some tau.[Su].
 Proof.
-    intros.
-    unfold subst_option.
-    rewrite H.
-    reflexivity.
+  intros.
+  unfold subst.
+  eapply map_nth_error in H.
+  exact H.
 Qed.
 
-Theorem subst_repo : forall (Gamma : var -> option type) (Su : var -> type) (a : var),
-    Gamma.?[Su] a = (Gamma a)..[Su].
+Theorem subst_repo_none : forall (Gamma : repo) (Su : var -> type) (a : var),
+    nth_error Gamma a = None ->
+    nth_error Gamma..[Su] a = None.
+Proof.
+  intros.
+  apply nth_error_None in H.
+  apply nth_error_None. 
+  unfold subst.
+  erewrite <- map_length in H.
+  exact H.
+Qed.
+
+Theorem subst_repo : forall (Gamma : repo) (Su : var -> type) (a : var),
+    nth_error Gamma..[Su] a = (nth_error Gamma a)..[Su].
 Proof.
     intros.
-    destruct (Gamma a) eqn:G.
+    destruct (nth_error Gamma a) eqn:G.
     - apply subst_repo_some. assumption.
     - apply subst_repo_none. assumption.
 Qed.
 
-Theorem subst_repo_cons : forall (Gamma : var -> option type) (Su : var -> type)
+Theorem subst_repo_cons : forall (Gamma : repo) (Su : var -> type)
     (A : type),
-    (Some A.[Su] .: Gamma.?[Su]) = (Some A .: Gamma).?[Su].
+    (A.[Su] :: Gamma..[Su]) = (A :: Gamma)..[Su].
 Proof.
-    intros.
-    extensionality x.
-    destruct x.
-    - reflexivity.
-    - asimpl. unfold scons. unfold subst_option. reflexivity.
-Qed.
-
-Theorem subst_ty : forall Gamma s A, ty Gamma s A ->
-    forall (Su : var -> type), ty Gamma.?[Su] s A.[Su]. 
-Proof.
-    intros.
-    generalize dependent A.
-    generalize dependent Gamma.
-    induction s.
-    - intros Gamma A. constructor. constructor. apply subst_repo_some. inversion H. inversion X. assumption.
-    - intros Gamma A. ainv. apply Ty_App_lift with (A0.[Su]).
-      + pose proof (IHs1 Gamma (A0 ~> A)). asimpl in H. apply H. constructor. assumption.
-      + apply IHs2. constructor. eassumption.
-    - intros Gamma A. ainv. apply Ty_Lam_lift. rewrite subst_repo_cons. eapply IHs. constructor. assumption.
-Qed.
-
-Definition Typable (t:term) := exists tau Gamma, ty Gamma t tau.
-
-Theorem typable_subterm : forall m t, Typable t -> subterm m t -> Typable m.
-Proof.
-    intros.
-    induction H0.
-    - assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists (A ~> x). exists x0. constructor. assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists A. exists x0. constructor. assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists B. exists (Some A.: x0). constructor. assumption.
+    autosubst.
 Qed.
 
 Inductive subformula : type -> type -> Prop :=
@@ -374,51 +223,13 @@ Qed.
 Definition make_arrow_type (ts : list type) (a : type) :=
     fold_right Arr a ts. 
 
-Lemma mp_gen : forall Gamma ms x tau, ty Gamma (curry (!x) ms) tau ->
-  exists sigmas, Forall2 (ty Gamma) ms sigmas /\ Gamma x = Some (make_arrow_type (sigmas) tau).
+Lemma make_arrow_type_ts_is_nil {ts rho a}:
+  make_arrow_type ts rho = (? a) -> ts = [] /\ rho = (? a).
 Proof.
-  induction ms using rev_ind.
-  - intros. ainv. exists []. split.
-    + constructor.
-    + simpl. assumption.
-  - intros. rewrite curry_tail in H. apply generation_app in H as [sigma [HArr Hsig]]. apply IHms in HArr as [sigmas0 [HForall HGamma]].
-    exists (sigmas0 ++ [sigma]). split.
-    + apply Forall2_head_to_last. constructor; assumption.
-    + unfold make_arrow_type. rewrite fold_right_app.
-      simpl. assumption.
+  destruct ts.
+  - asimpl. auto.
+  - asimpl. intros. discriminate H.
 Qed.
-
-Definition eq_ind_ty {A : Type } := 
-fun (x : A) (P : A -> Type) (f : P x) (y : A) (e : x = y) =>
-match e in (_ = y0) return (P y0) with
-| eq_refl => f
-end.
-
-Definition list_ind_ty {A : Type} := 
-fun (P : list A -> Type) (f : P []) (f0 : forall (a : A) (l : list A), P l -> P (a :: l)) =>
-fix F (l : list A) : P l := match l as l0 return (P l0) with
-                            | [] => f
-                            | y :: l0 => f0 y l0 (F l0)
-                            end.
-
-Definition rev_list_ind_ty {A : Type} :=
-fun (P : list A -> Type) (H : P [])
-  (H0 : forall (a : A) (l : list A), P (rev l) -> P (rev (a :: l))) (l : list A) =>
-  list_ind_ty (fun l0 : list A => P (rev l0)) H (fun (a : A) (l0 : list A) (IHl : P (rev l0)) => H0 a l0 IHl) l.
-
-Definition rev_ind_ty {A : Type} := 
-fun (P : list A -> Type) (H : P []) (H0 : forall (x : A) (l : list A), P l -> P (l ++ [x]))
-  (l : list A) =>
-(fun E : rev (rev l) = l =>
- eq_ind_ty (rev (rev l)) (fun l0 : list A => P l0)
-   (rev_list_ind_ty P H (fun (a : A) (l0 : list A) (H1 : P (rev l0)) => H0 a (rev l0) H1) (rev l)) l E)
-  (rev_involutive l).
-
-Lemma mp_gen_t : forall Gamma ms x tau, ty_deriv_of Gamma (curry (!x) ms) tau ->
-  { sigmas | Forall2 (ty Gamma) ms sigmas /\ Gamma x = Some (make_arrow_type (sigmas) tau)}.
-Proof.
-  induction ms using rev_ind_ty.
-  - intros. ainv. 
 
 Lemma pump_type_target : forall sigma tau, type_target tau = type_target (sigma ~> tau).
 Proof.
@@ -441,8 +252,8 @@ Proof.
 Qed.
 
 Lemma make_arrow_type_last : forall ts t a,
-  make_arrow_type (ts ++ [t]) (? a) =
-    make_arrow_type (ts) (t ~> ? a).
+  make_arrow_type (ts ++ [t]) a =
+    make_arrow_type (ts) (t ~> a).
 Proof.
   unfold make_arrow_type.
   intros.
@@ -455,25 +266,25 @@ Proof.
 Qed.
 
 Lemma make_arrow_type_head : forall ts t a,
-  make_arrow_type (t :: ts) (? a) =
-    t ~> make_arrow_type ts (? a).
+  make_arrow_type (t :: ts) a =
+    t ~> make_arrow_type ts a.
 Proof.
   intros. reflexivity.
 Qed.
 
-Lemma repo_pump_subst : forall Gamma Gamma0 A Su, Gamma = Gamma0.?[Su] -> (Some A .: Gamma) = Some A .: Gamma0.?[Su].
+Lemma repo_pump_subst : forall (Gamma : repo) Gamma0 A Su, Gamma = Gamma0..[Su] -> (A :: Gamma) = A :: Gamma0..[Su].
 Proof.
   intros.
   subst. try rewrite <- subst_repo_cons.
   reflexivity.
 Qed.
 
-Lemma repo_subst_exists : forall Gamma Su x A, (Gamma.?[Su] x = Some A) 
-  -> exists B, B.[Su] = A /\ Gamma x = Some B.
+Lemma repo_subst_exists : forall (Gamma : repo) Su x A, (nth_error Gamma..[Su] x = Some A) 
+  -> exists B, B.[Su] = A /\ nth_error Gamma x = Some B.
 Proof.
-  intros. unfold subst_option in H. destruct (Gamma x).
-  + inv H. exists t. auto.
-  + inv H.
+  intros. destruct (nth_error Gamma x) eqn:Ht.
+  + exists t. rewrite subst_repo in H. rewrite Ht in H. ainv. split; reflexivity.
+  + rewrite subst_repo in H. rewrite Ht in H. ainv.
 Qed.
 
 Lemma subst_arr_is_arr_or : forall x t Su t0, x.[Su] = t ~> t0 
@@ -577,6 +388,7 @@ Fixpoint wrap_lam (n : nat) (m : term) : term :=
   | S n =>  \_ (wrap_lam n (rename (+1) m) @ !0)
   end.
 
+  
 Fixpoint fv_type (tau: type) : set var :=
     match tau with
     | ? a => [a]
@@ -598,16 +410,6 @@ Proof.
     reflexivity.
 Qed.
 
-Theorem canon_type_ty : forall Gamma m tau, 
-    ty Gamma m tau 
-        -> ty Gamma.?[canon_type_subst tau] m tau.[canon_type_subst tau].
-Proof.
-    intros.
-    unfold canon_type.
-    apply subst_ty.
-    assumption.
-Qed.
-
 Instance Ids_option {T} {ids : Ids T} : Ids (option T) := ids >>> Some.
 Instance Rename_option {T} {rename : Rename T} : Rename (option T) := fun xi opterm =>
                                                                     match opterm with
@@ -615,13 +417,13 @@ Instance Rename_option {T} {rename : Rename T} : Rename (option T) := fun xi opt
                                                                     | Some term => Some (rename xi term)
                                                                     end.
 
-Fixpoint app_unify (Gamma : var -> option type) (sigma : type) (tau : type) : option type :=
+Fixpoint app_unify (Gamma : list type) (sigma : type) (tau : type) : option type :=
   Some tau.
 
-Fixpoint infer_type (Gamma : var -> option type) (depth: nat) (m : term) : option type :=
+Fixpoint infer_type (Gamma : repo) (depth: nat) (m : term) : option type :=
   match m with
-  | !x => Gamma x
-  | \_ s => let otau := infer_type ((Some (? depth)) .: Gamma) (depth + 1) s in
+  | !x => nth_error Gamma x
+  | \_ s => let otau := infer_type ((? depth) :: Gamma) (depth + 1) s in
             match otau with
             | Some tau => Some (? depth ~> tau)
             | None => None
@@ -707,3 +509,44 @@ Lemma notU : (if subformula_dec (? 0) (? 0 ~> ? 0) then true else false) = true.
 Proof.
     reflexivity.
 Qed.
+
+Fixpoint count_app (m: term) : nat :=
+  match m with
+  | p @ q => 1 + count_app p
+  | _ => 0
+  end.
+
+Fixpoint first_term t :=
+  match t with
+  | p @ q => first_term p
+  | s => s
+  end.
+
+Fixpoint uncurry (t : term) : term * list term :=
+  match t with
+  | p @ q => let (hd, tl) := uncurry p in
+            (hd, tl ++ [q])
+  | m => (m , [])
+  end.
+
+Lemma uncurry_var_singl t x: (x, []) = uncurry t -> t = x.
+Proof.
+  revert t x.
+  induction t.
+  + ainv.
+  + intros. asimpl in H. destruct (uncurry t1). ainv. destruct l; ainv.
+  + ainv.
+Qed.
+
+Hint Immediate uncurry_var_singl.
+Hint Unfold uncurry.
+
+Fixpoint first_fresh_type (rho: type) : var :=
+  match rho with
+  | ? x => (S x)
+  | sigma ~> tau => S (Nat.max (first_fresh_type sigma) (first_fresh_type tau))
+  end.
+ 
+Definition fresh_type (rho: type) : type := ? (first_fresh_type rho).
+  
+

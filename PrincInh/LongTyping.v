@@ -3,13 +3,15 @@ Require Import Coq.Lists.List.
 Require Import Autosubst.Autosubst.
 
 Require Import PrincInh.Terms.
-Require Import PrincInh.TypesCommon.
-Require Import PrincInh.TypesType.
+Require Import PrincInh.Types.
+Require Import PrincInh.Typing.
+Require Import PrincInh.NFTerms.
 Require Import PrincInh.Utils.
 
 Import ListNotations.
 Import EqNotations.
 
+(* Long typings for terms and nfterms *)
 Inductive long_ty_T (Gamma : repo) : term -> type -> Type :=
 | Long_I_T s A B : long_ty_T (A :: Gamma) s B ->
         long_ty_T Gamma (Lam s) (Arr A B)
@@ -22,6 +24,46 @@ with
     | lr_cons_T m t ms ts : long_ty_T Gamma m t -> long_rel_T Gamma ms ts -> 
             long_rel_T Gamma (m::ms) (t::ts)
 .
+
+Inductive nfty_long (Gamma : repo) : nfterm -> type -> Type :=
+| NFTy_lam_long s sigma tau : nfty_long (sigma :: Gamma) s tau -> nfty_long Gamma (\__ s) (sigma ~> tau)
+| NFTy_var_long : forall x a ts ms (Gammaok : nth_error Gamma x = Some (make_arrow_type ts (? a)))
+                    (Lenproof : length ms = length ts),
+    (forall n (pms : n < length ms),
+        nfty_long Gamma (nth_ok ms n pms) (nth_ok ts n (rew Lenproof in pms))) ->
+    nfty_long Gamma (!!x @@ ms) (? a)
+.
+
+Inductive nfty_long_subj : forall Gamma Gamma' m m' rho rho', nfty_long Gamma m rho -> nfty_long Gamma' m' rho' -> Type :=
+| nfty_long_refl : forall Gamma m rho (proof: nfty_long Gamma m rho), nfty_long_subj _ _ _ _ _ _ proof proof
+| nfty_long_trans : forall Gamma Gamma' Gamma'' m m' m'' rho rho' rho''
+                      (proof1 : nfty_long Gamma m rho)
+                      (proof2 : nfty_long Gamma' m' rho')
+                      (proof3 : nfty_long Gamma'' m'' rho''),
+    nfty_long_subj _ _ _ _ _ _ proof1 proof2 ->
+    nfty_long_subj _ _ _ _ _ _ proof2 proof3 ->
+    nfty_long_subj _ _ _ _ _ _ proof1 proof3
+| nfty_long_subj_I : forall Gamma sigma tau s (proof : nfty_long (sigma :: Gamma) s tau),
+    nfty_long_subj _ _ _ _ _ _ proof (NFTy_lam_long _ _ _ _ proof)
+| nfty_long_subj_E : forall Gamma x ts ms a
+                       (Gammaok : nth_error Gamma x = Some (make_arrow_type ts (? a)))
+                       (Lenproof : length ms = length ts)
+                       (proofs : (forall n (pms : n < length ms),
+                                     nfty_long Gamma (nth_ok ms n pms) (nth_ok ts n (rew Lenproof in pms))))
+                       n (len: n < length ms),   
+    nfty_long_subj _ _ _ _ _ _ (proofs n len) (NFTy_var_long _ _ _ _ _ Gammaok Lenproof proofs).
+
+
+Lemma nfty_long_subterm : forall n m, subterm_nf n m -> forall tau Gamma, nfty_long Gamma m tau -> {Gamma' & {tau' & nfty_long Gamma' n tau'}}.
+Proof.
+  induction 1; intros.
+  - exists Gamma. exists tau. assumption.
+  - inv X0. eapply IHX. exact X1.
+  - inv X0. apply In_nth_error_set in i. destruct i as [n H].
+    apply nth_error_nth_ok in H. destruct H as [lp H]. pose proof (X1 n lp). eapply IHX. rewrite H in X0. exact X0.
+Qed.
+
+
 
 Lemma Long_E_aux_T : forall Gamma x ms ts a curr v,
 nth_error Gamma x = Some (make_arrow_type ts (? a)) 
