@@ -318,7 +318,7 @@ Inductive SfC_subj R : forall Delta Delta' m m' pi pi', SfC Delta R m pi -> SfC 
 .
 
 
-Lemma sechszehn_aux : forall m R R' pi Delta, Rsub R R' ->
+Lemma sfc_monotone_aux : forall m R R' pi Delta, Rsub R R' ->
                                          SfC Delta R m pi -> SfC Delta R' m pi.
 Proof.
   induction 2.
@@ -331,26 +331,26 @@ Proof.
       assumption.
 Qed.
 
-Lemma sechszehn : forall m R R', Rsub R R' -> SfC [] R m [] -> SfC [] R' m [].
+Lemma sfc_monotone : forall m R R', Rsub R R' -> SfC [] R m [] -> SfC [] R' m [].
 Proof.
   intros. 
-  eapply sechszehn_aux.
+  eapply sfc_monotone_aux.
   - apply X.
   - assumption.
 Qed.
 
-Lemma sechszehn_aux_list : forall m R R' pi Delta, Rsub_list R R' ->
+Lemma sfc_monotone_aux_list : forall m R R' pi Delta, Rsub_list R R' ->
                                               SfC Delta (ts_cl_list R) m pi ->
                                               SfC Delta (ts_cl_list R') m pi.
 Proof.
   intros.
   pose proof (Rsub_list_ts R R' H).
-  eapply sechszehn_aux.
+  eapply sfc_monotone_aux.
   - apply X0.
   - apply X.
 Qed.
 
-Definition siebzehn_bedingung {Delta R m pi} (proof : SfC Delta R m pi) :=
+Definition evenodd_cond {Delta R m pi} (proof : SfC Delta R m pi) :=
   (even_ones pi) /\ (odd_repo (Delta)).
 
 
@@ -397,12 +397,12 @@ Fixpoint any_judg_SfC {Delta R m pi} (P : forall Delta' R' m' pi', SfC Delta' R'
       any_judg_SfC (P) (proof' n p)
   end.
 
-Lemma siebzehn_aux {Delta R m pi} (proof : SfC Delta R m pi) : siebzehn_bedingung proof -> each_judg_SfC (@siebzehn_bedingung) proof .
+Lemma evenodd_aux {Delta R m pi} (proof : SfC Delta R m pi) : evenodd_cond proof -> each_judg_SfC (@evenodd_cond) proof .
 Proof.
   induction proof.
   - intros. unfold each_judg_SfC. split. { assumption. } 
     apply IHproof.
-    unfold siebzehn_bedingung in *. destruct H as [Hev Hodd].
+    unfold evenodd_cond in *. destruct H as [Hev Hodd].
     split.
     + rewrite <- even_ones_pump. assumption.
     + rewrite odd_repo_head_tail. unfold odd_repo. 
@@ -420,26 +420,26 @@ Proof.
     + assumption.
 Qed.
 
-Lemma siebzehn {R m} (proof : SfC [] R m []) : each_judg_SfC (@siebzehn_bedingung) proof .
+Lemma evenodd {R m} (proof : SfC [] R m []) : each_judg_SfC (@evenodd_cond) proof .
 Proof.
- apply siebzehn_aux.
- unfold siebzehn_bedingung.
+ apply evenodd_aux.
+ unfold evenodd_cond.
  split.
  - unfold even_ones. simpl. exists 0. auto.
  - unfold odd_repo. constructor.
 Qed.
 
-Definition achtzehn_bedingung {Delta R m pi} (proof : SfC Delta R m pi)  :=
+Definition r_not_refl_cond {Delta R m pi} (proof : SfC Delta R m pi)  :=
   match proof with
   | SfC_I _ _ _ _ _ => True
   | SfC_E _ _ ms pi pi' _ _ _ _ => ~(pi ++ repeat Tgt (length ms) = pi')
   end.
 
-Lemma siebzehn_2_achtzehn {Delta R m pi} (proof : SfC Delta R m pi) : siebzehn_bedingung proof -> achtzehn_bedingung proof.
+Lemma evenodd_2_r_not_refl {Delta R m pi} (proof : SfC Delta R m pi) : evenodd_cond proof -> r_not_refl_cond proof.
 Proof.
   destruct proof.
   - simpl. auto.
-  - unfold achtzehn_bedingung. unfold siebzehn_bedingung.
+  - unfold r_not_refl_cond. unfold evenodd_cond.
     intros. destruct H as [Hev Hodd].
     unfold odd_repo in Hodd. rewrite Forall_forall in Hodd.
     pose proof (Hodd pi). apply nth_error_In in e. apply H in e.
@@ -470,12 +470,12 @@ Proof.
     + intros. apply H0. apply Hr.
 Qed.
 
-Lemma achtzehn {R m} (proof : SfC [] R m []) : each_judg_SfC (@achtzehn_bedingung) proof. 
+Lemma r_not_refl {R m} (proof : SfC [] R m []) : each_judg_SfC (@r_not_refl_cond) proof. 
 Proof.
-  apply each_judg_impl with @siebzehn_bedingung.
+  apply each_judg_impl with @evenodd_cond.
   intros.
-  apply siebzehn_2_achtzehn. assumption.
-  apply siebzehn.
+  apply evenodd_2_r_not_refl. assumption.
+  apply evenodd.
 Qed.
 
 Definition is_minimal_R (m : nfterm) (R : path -> path -> Type) :=
@@ -590,7 +590,7 @@ Proof.
       pose proof (Rm_in_list n ms p0 p1 Delta).
       apply (all_some_some _ _ (R_m_aux Delta (p0 ++ repeat Tgt n ++ [Src]) (nth_ok ms n p1))) in Hallsome.
       * destruct Hallsome.
-        eapply (sechszehn_aux_list _ x0).
+        eapply (sfc_monotone_aux_list _ x0).
         ** unfold Rsub_list. intros. destruct a.
            rewrite <- H.
            revert H1 H3. clear...
@@ -1029,7 +1029,7 @@ Proof.
   rewrite map_length. assumption.
 Qed.
 
-Lemma fz_aux {rho} : forall Delta R m pi (base_sfc : SfC Delta R m pi) Gamma,
+Lemma sfc_to_long_subj {rho} : forall Delta R m pi (base_sfc : SfC Delta R m pi) Gamma,
                Delta2Gamma rho Delta = Some Gamma ->
                forall pr (base_long : nfty_long Gamma m (P_ok rho pi pr))
                Delta' m' pi' (subj_sfc : SfC Delta' R m' pi'),
@@ -1096,7 +1096,7 @@ Proof.
   exists pr0. assumption.
 Qed.
 
-Lemma fz_aux2 {rho} : forall R m someDelta somepi (base_sfc : SfC someDelta R m somepi)
+Lemma sfc_app_subj_types_atomic {rho} : forall R m someDelta somepi (base_sfc : SfC someDelta R m somepi)
       someGamma somepr (base_long : nfty_long someGamma m (P_ok rho somepi somepr))
       (someD2G: Delta2Gamma rho someDelta = Some someGamma)
       Delta x pi (Deltaok : nth_error Delta x = Some pi)
@@ -1105,7 +1105,7 @@ Lemma fz_aux2 {rho} : forall R m someDelta somepi (base_sfc : SfC someDelta R m 
                  { a & P rho (pi ++ repeat Tgt (length ms)) = Some (? a) /\ P rho (pi') = Some (? a) }.
 Proof.
   intros.  
-  pose proof (fz_aux _ R m _ base_sfc _ someD2G somepr base_long Delta (!! x @@ ms) pi' subj_sfc X)
+  pose proof (sfc_to_long_subj _ R m _ base_sfc _ someD2G somepr base_long Delta (!! x @@ ms) pi' subj_sfc X)
     as [Gamma [D2G [pr nfty]]].
   inversion nfty. rewrite Lenproof in *. subst. exists a. split.
   - rewrite H.
@@ -1118,7 +1118,7 @@ Proof.
   - eapply P_ok_P. symmetry. exact H.
 Qed.
 
-Lemma fz_aux_R_tau_cond {rho m R Delta x pi ms pi'} :
+Lemma sfc_app_subj_R_tau_cond {rho m R Delta x pi ms pi'} :
   forall (base_sfc : SfC [] R m []) (base_long : nfty_long [] m rho)
     (subj_sfc : SfC Delta R (!! x @@ ms) pi')
     (Deltaok : nth_error Delta x = Some pi),
@@ -1126,11 +1126,11 @@ Lemma fz_aux_R_tau_cond {rho m R Delta x pi ms pi'} :
     R_tau_cond rho (pi ++ repeat Tgt (length ms), pi') = true.
 Proof.
   intros.
-  pose proof (fz_aux2 _ _ _ _ base_sfc _ (dom_P_nil _) base_long eq_refl _ _ _ Deltaok _ _ subj_sfc X) as [a [Hpi Hpi']].
+  pose proof (sfc_app_subj_types_atomic _ _ _ _ base_sfc _ (dom_P_nil _) base_long eq_refl _ _ _ Deltaok _ _ subj_sfc X) as [a [Hpi Hpi']].
   unfold R_tau_cond. simpl. rewrite Hpi. rewrite Hpi'. apply andb_true_intro.
   split; try (apply equivb_prop; reflexivity). 
-  pose proof (achtzehn base_sfc).
-  pose proof (each_judg_subj_SfC_P _ _ _ _ _ _ H _ _ _ _ X). unfold achtzehn_bedingung in H0. simpl in H0.
+  pose proof (r_not_refl base_sfc).
+  pose proof (each_judg_subj_SfC_P _ _ _ _ _ _ H _ _ _ _ X). unfold r_not_refl_cond in H0. simpl in H0.
   pose proof SfC_gen_app _ _ _ _ _ subj_sfc.
   rewrite <- H1 in H0.
   pose proof (get_subproof_app_deltaok subj_sfc).
@@ -1138,15 +1138,15 @@ Proof.
   apply nequivb_prop. assumption.
 Qed.
 
-Lemma fz_aux_in_R_tau {rho m R} :
+Lemma sfc_app_subj_in_R_tau {rho m R} :
   forall (base_sfc : SfC [] R m []) (base_long : nfty_long [] m rho) Delta x pi (Deltaok : nth_error Delta x = Some pi) ms pi'
     (subj_sfc : SfC Delta R (!! x @@ ms) pi'),
     SfC_subj _ _ _ _ _ _ _ subj_sfc base_sfc ->
     R_tau_ts rho (pi ++ repeat Tgt (length ms)) pi'.
 Proof.
   intros.
-  pose proof (fz_aux_R_tau_cond base_sfc base_long subj_sfc Deltaok X).
-  pose proof (fz_aux2 _ _ _ _ base_sfc _ (dom_P_nil _) base_long eq_refl _ _ _ Deltaok _ _ subj_sfc X) as [a [Hpi Hpi']].
+  pose proof (sfc_app_subj_R_tau_cond base_sfc base_long subj_sfc Deltaok X).
+  pose proof (sfc_app_subj_types_atomic _ _ _ _ base_sfc _ (dom_P_nil _) base_long eq_refl _ _ _ Deltaok _ _ subj_sfc X) as [a [Hpi Hpi']].
   unfold R_tau_ts.
   unfold R_tau_list.
   constructor.
@@ -1157,7 +1157,7 @@ Proof.
   - assumption.
 Qed.    
 
-Lemma fz_aux_fin {R m Delta' pi''}: forall (base_sfc: SfC Delta' R m pi'') R',
+Lemma sfc_replace_R {R m Delta' pi''}: forall (base_sfc: SfC Delta' R m pi'') R',
     (forall Delta x pi, nth_error Delta x = Some pi -> forall ms pi' (subj_sfc: SfC Delta R (!!x @@ ms) pi'), 
           SfC_subj _ _ _ _ _ _ _ subj_sfc base_sfc -> R' (pi ++ repeat Tgt (length ms)) pi')
     -> SfC Delta' R' m pi''.
@@ -1185,18 +1185,18 @@ Proof.
           apply s1.
 Qed.
 
-Lemma fuenfundzwanzig_i_ii {rho m} : nfty_long [] m rho ->
+Lemma long_to_sfc_tau {rho m} : nfty_long [] m rho ->
     SfC [] (R_tau_ts rho) m [].
 Proof.
   intro base_long.
   pose proof (Long_closed _ _ base_long) as Hclosed.
   pose proof (closed_Rm _ Hclosed) as base_sfc.
-  pose proof (fz_aux_in_R_tau base_sfc base_long).
-  pose proof fz_aux_fin base_sfc _ X.
+  pose proof (sfc_app_subj_in_R_tau base_sfc base_long).
+  pose proof sfc_replace_R base_sfc _ X.
   assumption.
 Qed.
 
-Lemma fuenfundzwanzig_ii_iii {m tau} : SfC [] (R_tau_ts tau) m [] -> Rsub (R_m_ts m) (R_tau_ts tau).
+Lemma sfc_tau_to_Rsub_m_tau {m tau} : SfC [] (R_tau_ts tau) m [] -> Rsub (R_m_ts m) (R_tau_ts tau).
 Proof.
   intros. unfold R_m_ts. destruct (R_m m) eqn:HRm.
   - apply R_m_ts_minimal with (Rm':=l) in X.
@@ -1245,7 +1245,7 @@ Proof.
   rewrite nth_ok_nth_error in Heqt. assumption.
 Qed.
 
-Lemma fuenfundzwanzig_iii_i_aux {m tau} : forall Delta pi R, SfC Delta R m pi ->
+Lemma Rsub_m_tau_to_Long_aux {m tau} : forall Delta pi R, SfC Delta R m pi ->
                                                       forall Gamma, Delta2Gamma tau Delta = Some Gamma ->
                                                                Rsub R (R_tau_ts tau) ->
                                                                {pr & nfty_long Gamma m (P_ok tau pi pr)}.
@@ -1296,20 +1296,20 @@ Proof.
       assumption. Unshelve. symmetry. assumption.
 Qed.
 
-Lemma fuenfundzwanzig_iii_i {m tau} : closed m -> Rsub (R_m_ts m) (R_tau_ts tau) -> nfty_long [] m tau.
+Lemma Rsub_m_tau_to_Long {m tau} : closed m -> Rsub (R_m_ts m) (R_tau_ts tau) -> nfty_long [] m tau.
 Proof.
   intros Hclosed.
   pose proof (closed_Rm _ Hclosed) as base_sfc.
   intros.
-  pose proof (fuenfundzwanzig_iii_i_aux _ _ _ base_sfc [] eq_refl X) as [pr nf]. 
+  pose proof (Rsub_m_tau_to_Long_aux _ _ _ base_sfc [] eq_refl X) as [pr nf]. 
   simpl in nf. assumption.
 Qed.
 
-Lemma fuenfundzwanzig_i_iii {m tau} : nfty_long [] m tau -> Rsub (R_m_ts m) (R_tau_ts tau).
+Lemma long_to_Rsub_m_tau {m tau} : nfty_long [] m tau -> Rsub (R_m_ts m) (R_tau_ts tau).
 Proof.
   intros.
-  apply fuenfundzwanzig_ii_iii.
-  apply fuenfundzwanzig_i_ii.
+  apply sfc_tau_to_Rsub_m_tau.
+  apply long_to_sfc_tau.
   assumption.
 Qed.
 
@@ -1771,7 +1771,7 @@ Lemma sechsundzwanzig : forall m tau pi pr a, nfty_long [] m tau -> P_ok tau pi 
 Proof.
   (*
   intros.
-  pose proof fuenfundzwanzig_i_iii X.
+  pose proof long_to_sfc_taui X.
   assert (Rsub (R_m_ts m) (R_tau_ts (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau)))).
   {
     ainv.
@@ -1824,6 +1824,6 @@ Proof.
     - intros. asimpl. ainv.
     - intros. unfold R_tau_list. *)}
   pose proof (Long_closed _ _ X) as Hclosed.
-  pose proof (fuenfundzwanzig_iii_i Hclosed X1).
+  pose proof (Rsub_m_tau_to_Long Hclosed X1).
   assumption.*)
 Admitted.

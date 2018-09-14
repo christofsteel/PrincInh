@@ -153,7 +153,7 @@ Admitted. *)
 Lemma siebenundzwanzig {m tau} : nfty_long [] m tau -> princ tau m -> Req (R_m_ts m) (R_tau_ts tau).
 Proof.
   intros. pose proof (Long_closed _ _ X). pose proof X as nfty_l.
-  apply fuenfundzwanzig_i_ii in X. apply fuenfundzwanzig_ii_iii in X.
+  apply long_to_sfc_tau in X. apply sfc_tau_to_Rsub_m_tau in X.
   split.
   - assumption.
   - unfold Rsub. assert (forall pi pi', (R_tau_ts tau) pi pi' -> ((R_m_ts m) pi pi' -> False) -> False).

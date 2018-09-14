@@ -116,7 +116,7 @@ Qed.
 
 
     
-Lemma zwölf {m Gamma tau}: forall (X : type -> bool) (proof : ty_T Gamma m tau),
+Lemma filter_deriv {m Gamma tau}: forall (X : type -> bool) (proof : ty_T Gamma m tau),
     (forall tau', In tau' (TD_f proof) -> X tau' = true) -> (forall a, ty_T (repo_filt X a Gamma) m (filtration X a tau)).
 Proof.
   intros.
@@ -188,9 +188,6 @@ Proof.
       * ainv.
 Qed.
 
-Definition princ rho m: Type :=
-  ty_T [] m rho * forall rho', ty_T [] m rho' -> {Su & rho.[Su] = rho'}.
-
 Lemma princ_var : forall A x, princ A (! x) -> False.
 Proof.
   intros.
@@ -201,10 +198,10 @@ Proof.
   ainv.
 Qed.
 
-Lemma vierzehn : forall m rho (D : ty_T [] m rho) sigma tau, subformula (sigma ~> tau) rho -> (TD_b D tau = false) ->  princ rho m -> False.
+Lemma filter_princ_nec : forall m rho (D : ty_T [] m rho) sigma tau, subformula (sigma ~> tau) rho -> (TD_b D tau = false) ->  princ rho m -> False.
 Proof.
   intros.
-  pose proof zwölf _ D TD_b_corr (first_fresh_type rho) as filtD.
+  pose proof filter_deriv _ D TD_b_corr (first_fresh_type rho) as filtD.
   simpl in filtD.
   unfold princ in X.
   destruct X as [alsoD Hsubst].

@@ -33,6 +33,8 @@ Inductive nfty (Gamma : repo) : nfterm -> type -> Type :=
              nfty Gamma (!!x @@ ms) tau
 .
 
+Definition princ rho m: Type :=
+  ty_T [] m rho * forall rho', ty_T [] m rho' -> {Su & rho.[Su] = rho'}.
 
 
 Lemma generation_app_T : forall s t tau (Gamma : repo), ty_T Gamma (s@t) tau ->
