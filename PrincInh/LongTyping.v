@@ -16,14 +16,8 @@ Inductive long_ty_T (Gamma : repo) : term -> type -> Type :=
 | Long_I_T s A B : long_ty_T (A :: Gamma) s B ->
         long_ty_T Gamma (Lam s) (Arr A B)
 | Long_E_T x ms ts a : nth_error Gamma x = Some (make_arrow_type ts (? a)) 
-        -> long_rel_T Gamma ms ts -> 
-        long_ty_T Gamma (curry (! x) ms) (? a)
-with 
-    long_rel_T (Gamma : repo) : list term -> list type -> Type :=
-    | lr_atom_T : long_rel_T Gamma [] []
-    | lr_cons_T m t ms ts : long_ty_T Gamma m t -> long_rel_T Gamma ms ts -> 
-            long_rel_T Gamma (m::ms) (t::ts)
-.
+        -> Forall2_T (long_ty_T Gamma) ms ts -> 
+        long_ty_T Gamma (curry (! x) ms) (? a).
 
 Inductive nfty_long (Gamma : repo) : nfterm -> type -> Type :=
 | NFTy_lam_long s sigma tau : nfty_long (sigma :: Gamma) s tau -> nfty_long Gamma (\__ s) (sigma ~> tau)
@@ -31,8 +25,7 @@ Inductive nfty_long (Gamma : repo) : nfterm -> type -> Type :=
                     (Lenproof : length ms = length ts),
     (forall n (pms : n < length ms),
         nfty_long Gamma (nth_ok ms n pms) (nth_ok ts n (rew Lenproof in pms))) ->
-    nfty_long Gamma (!!x @@ ms) (? a)
-.
+    nfty_long Gamma (!!x @@ ms) (? a).
 
 Inductive nfty_long_subj : forall Gamma Gamma' m m' rho rho', nfty_long Gamma m rho -> nfty_long Gamma' m' rho' -> Type :=
 | nfty_long_refl : forall Gamma m rho (proof: nfty_long Gamma m rho), nfty_long_subj _ _ _ _ _ _ proof proof
@@ -53,6 +46,8 @@ Inductive nfty_long_subj : forall Gamma Gamma' m m' rho rho', nfty_long Gamma m 
                        n (len: n < length ms),   
     nfty_long_subj _ _ _ _ _ _ (proofs n len) (NFTy_var_long _ _ _ _ _ Gammaok Lenproof proofs).
 
+Definition nflong_princ (rho: type) (M: nfterm) : Type :=
+  nfty_long [] M rho * forall rho', nfty_long [] M rho' -> { Su & rho.[Su] = rho' }.
 
 Lemma nfty_long_subterm : forall n m, subterm_nf n m -> forall tau Gamma, nfty_long Gamma m tau -> {Gamma' & {tau' & nfty_long Gamma' n tau'}}.
 Proof.
@@ -67,7 +62,7 @@ Qed.
 
 Lemma Long_E_aux_T : forall Gamma x ms ts a curr v,
 nth_error Gamma x = Some (make_arrow_type ts (? a)) 
-        -> long_rel_T Gamma ms ts -> 
+        -> Forall2_T (long_ty_T Gamma) ms ts -> 
         curr = curry (! x) ms -> v = (? a) ->
         long_ty_T Gamma curr v.
 Proof.
@@ -75,7 +70,7 @@ Proof.
   - apply H.
   - assumption.
 Qed.
-         
+
 Definition long_ty_T_ind' :
       forall P : repo -> term -> type -> Type,
        (forall (Gamma : repo) (s : term) (A B : type),
@@ -84,7 +79,7 @@ Definition long_ty_T_ind' :
        (forall (Gamma : repo) (x : var) 
           (ms : list term) (ts : list type) (a : var),
         nth_error Gamma x = Some (make_arrow_type ts (? a)) ->
-        long_rel_T Gamma ms ts -> 
+        Forall2_T (long_ty_T Gamma) ms ts -> 
         Forall2_T (P Gamma) ms ts -> 
         P Gamma (curry (! x) ms) (? a)) ->
        forall (Gamma : repo) (t : term) (t0 : type),
@@ -95,20 +90,21 @@ Definition long_ty_T_ind' :
             match proof with
             | Long_I_T _ s A B proof' => icase Gamma s A B proof' 
                     (long_ty_ind'_rec (A :: Gamma) s B proof')
-            | Long_E_T _ x ms ts a eqproof longrelproof => 
-               ecase Gamma x ms ts a eqproof longrelproof
-                 ((fix long_rel_ind'_rec (ms : list term) (ts : list type) 
-                   (proof : long_rel_T Gamma ms ts) {struct proof} 
-                     : Forall2_T (P Gamma) ms ts :=
-                  match proof with
-                  | lr_atom_T _ => Forall2_T_nil _
-                  | lr_cons_T _ m t ms ts long_ty_proof long_rel_proof =>
-                          @Forall2_T_cons _ _ _ m t ms ts (long_ty_ind'_rec Gamma m t long_ty_proof)
-                            (long_rel_ind'_rec ms ts long_rel_proof)
-                  end) ms ts longrelproof )
-             end.
-
-
+            | Long_E_T _ x ms ts a eqproof forallproof => 
+              ecase Gamma x ms ts a eqproof forallproof
+                    ((fix forall_rec (ms : list term) (ts : list type)
+                          (proof : Forall2_T (long_ty_T Gamma) ms ts) {struct proof}
+                      : Forall2_T (P Gamma) ms ts :=
+                        match proof with
+                        | Forall2_T_nil _ => Forall2_T_nil _
+                        | Forall2_T_cons _ m t ms ts headproof tailproof =>
+                          Forall2_T_cons _ m t ms ts
+                                         (long_ty_ind'_rec Gamma m t headproof)
+                                         (forall_rec _ _ tailproof)
+                        end) ms ts forallproof
+                    )
+            end.
+(*
 Lemma Forall2_if_long_rel_T : forall Gamma ms ts, long_rel_T Gamma ms ts -> Forall2_T (long_ty_T Gamma) ms ts.
 Proof.
   intros Gamma ms ts.
@@ -119,7 +115,7 @@ Lemma long_rel_if_Forall2_T : forall Gamma ms ts,  Forall2_T (long_ty_T Gamma) m
 Proof.
   intros Gamma ms ts.
   induction 1; constructor; try constructor; assumption.
-Qed.
+Qed.*)
 
 Lemma Forall2_inh {B C}: forall (A : B -> C -> Type) ms ts, Forall2 (fun a b => inhabited (A a b)) ms ts -> inhabited (Forall2_T (fun a b => A a b) ms ts).
   Proof.
@@ -160,7 +156,7 @@ Proof.
   - instantiate (1:=[]). auto.
   - constructor.
 Qed.
-
+(*
 Lemma long_rel_rev_T : forall ms ts Gamma, long_rel_T Gamma ms ts -> long_rel_T Gamma (rev ms) (rev ts).
 Proof.
   intros. apply long_rel_if_Forall2_T. apply Forall2_T_is_rev. repeat rewrite rev_involutive.
@@ -169,12 +165,12 @@ Qed.
   
 Lemma rev_long_rel_T : forall ms ts Gamma, long_rel_T Gamma (rev ms) (rev ts) ->  long_rel_T Gamma ms ts.
   intros. apply long_rel_if_Forall2_T. apply Forall2_T_is_rev_r. apply Forall2_if_long_rel_T. assumption.
-Qed.
+Qed.*)
 
 Lemma long_ty_app_T : forall Gamma n m ms t ts a x, 
   n = curry (! x) (ms) ->  
   long_ty_T Gamma m t ->
-  long_rel_T Gamma ms ts ->
+  Forall2_T (long_ty_T Gamma) ms ts ->
   nth_error Gamma x = Some (make_arrow_type ts (t ~> ? a)) 
   -> long_ty_T Gamma (n @ m) (? a).
 Proof.
@@ -182,10 +178,10 @@ Proof.
   subst. rewrite <- curry_tail.  econstructor.
   - instantiate (1:=(ts ++ [t])). 
     rewrite make_arrow_type_last. assumption.
-  - apply rev_long_rel_T. repeat rewrite rev_unit.
+  - apply Forall2_T_is_rev_r. repeat rewrite rev_unit.
     constructor.
     + assumption.
-    + apply long_rel_rev_T in X0. assumption.
+    + apply Forall2_T_is_rev in X0. assumption.
 Qed.
 
 

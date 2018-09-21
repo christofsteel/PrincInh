@@ -15,7 +15,7 @@ Require Import PrincInh.Paths.
 Import ListNotations.
 Import EqNotations.
 
-Definition princ (tau: type) (M: nfterm) : Prop :=
+Definition nfprinc (tau: type) (M: nfterm) : Type :=
     inhabited (nfty_long [] M tau) /\ forall sigma, nfty_long [] M sigma -> exists Su, subst Su tau = sigma.
 
 (*
@@ -50,14 +50,14 @@ Proof.
   - assumption.
 Qed.
 *)
-Example id_princ : princ (? 0 ~> ? 0) (\__ (!! 0 @@ [])).
+Example id_princ : nflong_princ (? 0 ~> ? 0) (\__ (!! 0 @@ [])).
 Proof.
-    unfold princ.
+    unfold nflong_princ.
     split.
-    - constructor. constructor. econstructor.
+    - constructor. econstructor.
       + instantiate (1 := []). reflexivity.
       + intros. exfalso. inversion pms.        
-    - simpl. destruct sigma.
+    - simpl. destruct rho'.
       + ainv.
       + intros. ainv.
         assert (ts = []).
@@ -67,7 +67,7 @@ Proof.
 Qed.
 
 Definition norm_princ_inhab (M: nfterm) (tau: type) :=
-    princ tau M.
+    nflong_princ tau M.
 
 Lemma subst_var_is_var_T : forall Su a tau, ? a = tau.[Su] -> {b | tau = ? b}.
 Proof.
@@ -150,7 +150,7 @@ Proof.
     unfold replace_all_paths.
 Admitted. *)
 
-Lemma siebenundzwanzig {m tau} : nfty_long [] m tau -> princ tau m -> Req (R_m_ts m) (R_tau_ts tau).
+Lemma siebenundzwanzig {m tau} : nfty_long [] m tau -> nflong_princ tau m -> Req (R_m_ts m) (R_tau_ts tau).
 Proof.
   intros. pose proof (Long_closed _ _ X). pose proof X as nfty_l.
   apply long_to_sfc_tau in X. apply sfc_tau_to_Rsub_m_tau in X.
@@ -159,17 +159,12 @@ Proof.
   - unfold Rsub. assert (forall pi pi', (R_tau_ts tau) pi pi' -> ((R_m_ts m) pi pi' -> False) -> False).
     { intros.
       remember (fresh_type tau).
-      pose proof R_tau_ts_in_dom_P _ _ _ X0 as [Hin [a Heq]].
+      pose proof R_tau_ts_in_dom_P _ _ _ X1 as [Hin [a Heq]].
       apply P_P_ok_set in Heq as [Hpr HPok].
-      pose proof sechsundzwanzig m tau pi Hpr a nfty_l HPok.
-      destruct H.
-      pose proof H2 _ X1 as [Su Heqtau].
-      clear X1 HPok Hin Hpr Heqt t a nfty_l H0 H2 X.
-      revert pi pi' Su m H H1 Heqtau X0.
-      induction tau.
-      - intros. ainv. rewrite nth_error_nil in H3. discriminate H3.
-      - intros. ainv. 
-
+      pose proof sechsundzwanzig m tau pi Hpr a nfty_l HPok as Hszw.
+      ainv.
+      pose proof X3 _ Hszw as [Su Heqtau].
+      clear X1 H1 Hpr a nfty_l H0 X.
       admit.
     }
     (*intros.
@@ -179,6 +174,7 @@ Proof.
     + exfalso. eapply H1. apply f.*)
 Admitted.
   
-Lemma einunddreissig : forall tau, star tau -> forall m, nfty_long [] m tau -> R_m_ts m = R_tau_ts tau -> princ tau m.
+Lemma einunddreissig : forall tau, star tau -> forall m, nfty_long [] m tau ->
+  R_m_ts m = R_tau_ts tau -> nflong_princ tau m.
 Proof.
 Admitted.
