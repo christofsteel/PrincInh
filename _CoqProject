@@ -2,6 +2,7 @@
 
 PrincInh/Utils.v
 PrincInh/Terms.v
+PrincInh/Terms2.v
 PrincInh/NFTerms.v
 PrincInh/Types.v
 PrincInh/Typing.v

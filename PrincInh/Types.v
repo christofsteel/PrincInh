@@ -6,7 +6,6 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 Require Import Autosubst.Autosubst.
 
-Require Import PrincInh.Terms.
 Require Import PrincInh.Utils.
 
 Import ListNotations.
@@ -381,12 +380,12 @@ Proof.
     - right. isfalse.
 Defined.
 
-
+(* Was hat das hier zu suchen? 
 Fixpoint wrap_lam (n : nat) (m : term) : term :=
   match n with
   | 0 => m
   | S n =>  \_ (wrap_lam n (rename (+1) m) @ !0)
-  end.
+  end. *)
 
   
 Fixpoint fv_type (tau: type) : set var :=
@@ -417,6 +416,7 @@ Instance Rename_option {T} {rename : Rename T} : Rename (option T) := fun xi opt
                                                                     | Some term => Some (rename xi term)
                                                                     end.
 
+(* Unifikation und so brauchen wir nicht :(
 Fixpoint app_unify (Gamma : list type) (sigma : type) (tau : type) : option type :=
   Some tau.
 
@@ -540,7 +540,7 @@ Qed.
 
 Hint Immediate uncurry_var_singl.
 Hint Unfold uncurry.
-
+*)
 Fixpoint first_fresh_type (rho: type) : var :=
   match rho with
   | ? x => (S x)
