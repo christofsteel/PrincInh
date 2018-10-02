@@ -141,7 +141,7 @@ Proof.
 Qed.
 
 Lemma mp_gen_T : forall Gamma ms x tau, ty_T Gamma (curry (!x) ms) tau ->
-  { sigmas & prod (Forall2_T (ty_T Gamma) ms sigmas) (nth_error Gamma x = Some (make_arrow_type (sigmas) tau)) }.
+  { ts & prod (Forall2_T (ty_T Gamma) ms ts) (nth_error Gamma x = Some (make_arrow_type ts tau)) }.
 Proof.
   induction ms using rev_ind_T.
   - intros. ainv. exists []. split.

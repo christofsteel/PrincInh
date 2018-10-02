@@ -104,18 +104,6 @@ Definition long_ty_T_ind' :
                         end) ms ts forallproof
                     )
             end.
-(*
-Lemma Forall2_if_long_rel_T : forall Gamma ms ts, long_rel_T Gamma ms ts -> Forall2_T (long_ty_T Gamma) ms ts.
-Proof.
-  intros Gamma ms ts.
-  induction 1; constructor; try constructor; assumption.
-Qed.
-
-Lemma long_rel_if_Forall2_T : forall Gamma ms ts,  Forall2_T (long_ty_T Gamma) ms ts -> long_rel_T Gamma ms ts.
-Proof.
-  intros Gamma ms ts.
-  induction 1; constructor; try constructor; assumption.
-Qed.*)
 
 Lemma Forall2_inh {B C}: forall (A : B -> C -> Type) ms ts, Forall2 (fun a b => inhabited (A a b)) ms ts -> inhabited (Forall2_T (fun a b => A a b) ms ts).
   Proof.
@@ -156,16 +144,6 @@ Proof.
   - instantiate (1:=[]). auto.
   - constructor.
 Qed.
-(*
-Lemma long_rel_rev_T : forall ms ts Gamma, long_rel_T Gamma ms ts -> long_rel_T Gamma (rev ms) (rev ts).
-Proof.
-  intros. apply long_rel_if_Forall2_T. apply Forall2_T_is_rev. repeat rewrite rev_involutive.
-  apply Forall2_if_long_rel_T. assumption.
-Qed.
-  
-Lemma rev_long_rel_T : forall ms ts Gamma, long_rel_T Gamma (rev ms) (rev ts) ->  long_rel_T Gamma ms ts.
-  intros. apply long_rel_if_Forall2_T. apply Forall2_T_is_rev_r. apply Forall2_if_long_rel_T. assumption.
-Qed.*)
 
 Lemma long_ty_app_T : forall Gamma n m ms t ts a x, 
   n = curry (! x) (ms) ->  

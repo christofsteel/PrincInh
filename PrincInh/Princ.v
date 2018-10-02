@@ -15,41 +15,6 @@ Require Import PrincInh.Paths.
 Import ListNotations.
 Import EqNotations.
 
-Definition nfprinc (tau: type) (M: nfterm) : Type :=
-    inhabited (nfty_long [] M tau) /\ forall sigma, nfty_long [] M sigma -> exists Su, subst Su tau = sigma.
-
-(*
-Definition princ_T (tau: type) (M: term) : Type :=
-  prod (ty_T [] M tau) (forall sigma, ty_T [] M sigma -> {Su | tau.[Su] = sigma}).
-*)
-(* Lemma 14 in Paper *)
-(*
-Lemma subformula_princ : forall m tau (proof : nfty [] m tau) sigma' tau', 
-    subformula (sigma' ~> tau') tau -> TD_b proof tau' = false -> (princ_T tau m -> False).
-Proof.
-  intros.
-  remember (first_fresh_type tau) as a. 
-  pose proof (zwölf (TD_b proof) proof TD_b_corr a).
-  rewrite filt_mtTy in X0.
-  remember (filtration (TD_b proof) a (sigma' ~> tau')) as t.
-  assert (t = ? a).
-  {
-    subst.
-    simpl.
-    rewrite H0.
-    rewrite Bool.andb_false_r.
-    reflexivity.
-  }
-  unfold princ_T in X.
-  destruct X.
-  pose proof (s (filtration (TD_b proof) a tau) X0).
-  destruct H2 as [Su H2].
-  subst.
-  apply (subst_subformula sigma' tau' tau (TD_b proof) (first_fresh_type tau) Su) in H.
-  - rewrite H1 in H. symmetry in H. apply subst_var_is_var_T in H. ainv.
-  - assumption.
-Qed.
-*)
 Example id_princ : nflong_princ (? 0 ~> ? 0) (\__ (!! 0 @@ [])).
 Proof.
     unfold nflong_princ.
@@ -123,18 +88,6 @@ Proof.
     split. ainv. exists x0. reflexivity.
 Qed.
 
-Lemma almost_refl_l {A} R : forall (pi pi' :A), ts_cl_list R pi pi' -> ts_cl_list R pi pi.
-Proof.
-  intros.
-  econstructor 3. apply X. constructor 2. assumption.
-Qed.
-
-Lemma almost_refl_r {A} R : forall (pi pi' :A), ts_cl_list R pi pi' -> ts_cl_list R pi' pi'.
-Proof.
-  intros.
-  econstructor 3. constructor 2. exact X. assumption.
-Qed.
-
 Lemma replace_at_paths_split : forall pi tau1 tau2, {m1 & { m2 & replace_at_path (tau1 ~> tau2) (fresh_type (tau1 ~> tau2)) pi = m1 ~> m2}} + {pi = []} + {In pi (dom_P (tau1~>tau2))}.
 Proof.
   intros.
@@ -150,7 +103,7 @@ Proof.
     unfold replace_all_paths.
 Admitted. *)
 
-Lemma siebenundzwanzig {m tau} : nfty_long [] m tau -> nflong_princ tau m -> Req (R_m_ts m) (R_tau_ts tau).
+Lemma princ_nec {m tau} : nfty_long [] m tau -> nflong_princ tau m -> Req (R_m_ts m) (R_tau_ts tau).
 Proof.
   intros. pose proof (Long_closed _ _ X). pose proof X as nfty_l.
   apply long_to_sfc_tau in X. apply sfc_tau_to_Rsub_m_tau in X.
@@ -161,7 +114,7 @@ Proof.
       remember (fresh_type tau).
       pose proof R_tau_ts_in_dom_P _ _ _ X1 as [Hin [a Heq]].
       apply P_P_ok_set in Heq as [Hpr HPok].
-      pose proof sechsundzwanzig m tau pi Hpr a nfty_l HPok as Hszw.
+      pose proof long_stays_long m tau pi Hpr a nfty_l HPok as Hszw.
       ainv.
       pose proof X3 _ Hszw as [Su Heqtau].
       clear X1 H1 Hpr a nfty_l H0 X.
@@ -174,7 +127,7 @@ Proof.
     + exfalso. eapply H1. apply f.*)
 Admitted.
   
-Lemma einunddreissig : forall tau, star tau -> forall m, nfty_long [] m tau ->
-  R_m_ts m = R_tau_ts tau -> nflong_princ tau m.
+Lemma princ_suff : forall tau, star tau -> forall m, nfty_long [] m tau ->
+  Req (R_m_ts m) (R_tau_ts tau) -> nflong_princ tau m.
 Proof.
 Admitted.

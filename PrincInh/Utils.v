@@ -2071,3 +2071,16 @@ Proof.
   - reflexivity.
   - simpl. rewrite <- IHn. reflexivity.
 Qed.
+
+Lemma almost_refl_l {A} R : forall (a b :A), ts_cl_list R a b -> ts_cl_list R a a.
+Proof.
+  intros.
+  econstructor 3. apply X. constructor 2. assumption.
+Qed.
+
+Lemma almost_refl_r {A} R : forall (a b :A), ts_cl_list R a b -> ts_cl_list R b b.
+Proof.
+  intros.
+  econstructor 3. constructor 2. exact X. assumption.
+Qed.
+

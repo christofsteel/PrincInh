@@ -228,8 +228,8 @@ Fixpoint max_fvar (m: nfterm) : var :=
   end.
 
 Definition all_var_in_repo {A} m (Delta : list A) := max_fvar m < S (length Delta).
-
-
+Definition closed m := max_fvar m = 0.
+Hint Unfold closed.
 
 Fixpoint term_NFterm_proof (t: term) : NF t -> nfterm.
 Proof.

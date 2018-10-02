@@ -516,7 +516,7 @@ Definition R_m_ts m := match R_m m with
                        | Some Rmm => ts_cl_list (Rmm)
                        end.
 
-Lemma combine_with_Rstuff : forall pi Delta, (fix combine_with (ms : list nfterm) (ns : list nat) {struct ms} :
+Lemma combine_with_inline : forall pi Delta, (fix combine_with (ms : list nfterm) (ns : list nat) {struct ms} :
                    list (option (list (path * path))) :=
                    match ms with
                    | [] => []
@@ -569,7 +569,7 @@ Proof.
   induction m using nfterm_rect'.
   - intros. simpl in H.
     destruct (nth_error Delta x) eqn:Hx; try discriminate H.
-    rewrite (combine_with_Rstuff p0 Delta) in H.
+    rewrite (combine_with_inline p0 Delta) in H.
     unfold option_concat in H.
     destruct (
         all_some
@@ -705,7 +705,7 @@ Proof.
       apply H2.
     }
     apply nth_error_Some in Hx. destruct (nth_error Delta x); try (exfalso; apply Hx; reflexivity).
-    rewrite (combine_with_Rstuff p0 Delta).
+    rewrite (combine_with_inline p0 Delta).
     unfold option_concat.
     destruct (all_some _) eqn:Hall.
     + eexists. reflexivity.
@@ -717,9 +717,9 @@ Proof.
     asimpl in *. omega.
 Qed.
 
-Definition closed m := max_fvar m = 0.
 
-Hint Unfold closed.
+
+
 
 Lemma closed_Rm : forall m, closed m -> SfC [] (R_m_ts m) m [].
 Proof.
@@ -829,7 +829,7 @@ Proof.
     }
     apply (X0 0) in s.
     clear X0.
-    asimpl in H. rewrite e in H. rewrite (combine_with_Rstuff pi Delta) in H. rewrite combine_with_map in H.
+    asimpl in H. rewrite e in H. rewrite (combine_with_inline pi Delta) in H. rewrite combine_with_map in H.
     apply option_concat_app in H. destruct H as [oms1 [oms2 [Hom1 [Hom2 Heq]]]]. asimpl in Hom2.
     apply some_eq in Hom2.
     rewrite Heq. apply Rsub_in_app.
@@ -1056,7 +1056,7 @@ Proof.
       - assumption.
     }
     pose proof (P_lam_step m pi Delta R (SfC_I _ _ _ _ proof) rho Gamma H pr) as HlamStep.
-    pose proof (dom_P_Src_to_Tgt _ _ _ Tgt prSrc) as prTgt.
+    pose proof (dom_P_replace_last _ _ _ Tgt prSrc) as prTgt.
     exists prTgt.
     assert (forall prSrc' pr'', nfty_long (P_ok rho (pi ++ [Src]) prSrc' :: Gamma) m (P_ok rho (pi ++ [Tgt]) pr'')
                                      ->  nfty_long (P_ok rho (pi ++ [Src]) prSrc :: Gamma) m (P_ok rho (pi ++ [Tgt]) prTgt)).
@@ -1146,14 +1146,14 @@ Lemma sfc_app_subj_in_R_tau {rho m R} :
 Proof.
   intros.
   pose proof (sfc_app_subj_R_tau_cond base_sfc base_long subj_sfc Deltaok X).
-  pose proof (sfc_app_subj_types_atomic _ _ _ _ base_sfc _ (dom_P_nil _) base_long eq_refl _ _ _ Deltaok _ _ subj_sfc X) as [a [Hpi Hpi']].
   unfold R_tau_ts.
   unfold R_tau_list.
   constructor.
-  apply filter_In. split.
-  - apply in_prod.
-    + apply P_P_ok_set in Hpi as [pr _]. assumption.
-    + apply P_P_ok_set in Hpi' as [pr _]. assumption.
+  apply filter_In.
+  split.
+  - unfold R_tau_cond in H. simpl in H. apply andb_prop in H. destruct H. destruct (P rho (pi ++ repeat Tgt (length ms))) eqn:HP ; try discriminate H0. destruct t; try discriminate H0. destruct (P rho pi') eqn:HP2; try discriminate H0. apply in_prod.
+    + apply P_P_ok_set in HP as [pr _]. assumption.
+    + apply P_P_ok_set in HP2 as [pr _]. assumption.
   - assumption.
 Qed.    
 
@@ -1258,7 +1258,7 @@ Proof.
       pose proof R_tau_ts_dom_P HRtau. destruct H0 as [a [HPpi HPpi']]. 
        pose proof P_prefix HPpi' as [tau' HPpi_Tgt].
         pose proof P_P_ok_set HPpi_Tgt as [pr HPok].
-        pose proof P_ok_Src_to_Tgt _ _ _ Src _ _ HPok as [pr' [rho HP]].
+        pose proof P_ok_replace_last _ _ _ Src _ _ HPok as [pr' [rho HP]].
         exists rho. exists pr'. assumption.
     }
     pose proof proj1 P_ok_P HPok as HP.
@@ -1700,7 +1700,7 @@ Proof.
 Qed.
 
 Definition replace_all_paths2 tau pis b := fold_right (fun pi tau => replace_at_path b tau pi) tau pis.
-Lemma sz_subst_is_fresh : forall pi' tau m pi pr,
+Lemma lsl_subst_is_fresh : forall pi' tau m pi pr,
     R_m_ts m pi pi' ->
     P_ok (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau)) pi' pr = fresh_type tau.
 Proof.
@@ -1741,7 +1741,7 @@ Proof.
 
 
 
-Lemma sechsundzwanzig_aux : forall tau pi m,
+Lemma long_stays_long_aux : forall tau pi m,
   Rsub (R_m_ts m) (R_tau_ts tau) ->
   Rsub (R_m_ts m) (R_tau_ts (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau))).
 Proof.
@@ -1766,7 +1766,7 @@ Proof.
   pose proof (rdec pi).
   destru*)
   Admitted.
-Lemma sechsundzwanzig : forall m tau pi pr a, nfty_long [] m tau -> P_ok tau pi pr = ? a ->
+Lemma long_stays_long : forall m tau pi pr a, nfty_long [] m tau -> P_ok tau pi pr = ? a ->
                                          nfty_long [] m (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau)).
 Proof.
   (*

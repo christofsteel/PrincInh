@@ -417,7 +417,7 @@ Proof.
   - exists t1. exists t2. apply dom_P_Tgt in H. split. reflexivity. assumption.
 Qed.
 
-Lemma dom_P_Src_to_Tgt : forall pi rho dir1 dir2, In (pi ++ [dir1]) (dom_P rho) -> In (pi ++ [dir2]) (dom_P rho).
+Lemma dom_P_replace_last : forall pi rho dir1 dir2, In (pi ++ [dir1]) (dom_P rho) -> In (pi ++ [dir2]) (dom_P rho).
 Proof.
   induction pi.
   - intros. destruct rho. ainv. destruct dir2; (asimpl; right; apply in_or_app).
@@ -430,11 +430,11 @@ Proof.
       simpl. right. apply in_or_app. right. apply in_map_cons_iff. eapply IHpi. apply HIn.
 Qed.
 
-Lemma P_ok_Src_to_Tgt : forall pi rho dir1 dir2 pr1 sigma, P_ok rho (pi ++ [dir1]) pr1 = sigma ->
+Lemma P_ok_replace_last : forall pi rho dir1 dir2 pr1 sigma, P_ok rho (pi ++ [dir1]) pr1 = sigma ->
                                                 {pr2 & {tau & P_ok rho (pi ++ [dir2]) pr2 = tau}}.
 Proof.
   intros.
-  pose proof dom_P_Src_to_Tgt _ _ _ dir2 pr1.
+  pose proof dom_P_replace_last _ _ _ dir2 pr1.
   exists H0. pose proof dom_P_some _ _ H0 as [tau HP]. exists tau.
   apply P_ok_P. assumption.
 Qed.
