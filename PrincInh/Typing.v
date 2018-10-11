@@ -16,12 +16,12 @@ Import ListNotations.
 
 (* Typing relations for terms and nfterms *)
 Inductive ty_T (Gamma : repo) : term -> type -> Type:=
-| Ty_Var x A : nth_error Gamma x = Some A ->
-        ty_T Gamma (Var x) A
-| Ty_Lam s A B : ty_T (A :: Gamma) s B ->
-        ty_T Gamma (Lam s) (Arr A B)
-| Ty_App s t A B : ty_T Gamma s (Arr A B) -> ty_T Gamma t A ->
-                   ty_T Gamma (App s t) B.
+| Ty_Var x rho : nth_error Gamma x = Some rho ->
+        ty_T Gamma (! x) rho
+| Ty_Lam s sigma tau : ty_T (sigma :: Gamma) s tau ->
+        ty_T Gamma (\_ s) (sigma ~> tau)
+| Ty_App s t sigma tau : ty_T Gamma s (sigma ~> tau) -> ty_T Gamma t sigma ->
+                   ty_T Gamma (s @ t) tau.
 
 
 Inductive nfty (Gamma : repo) : nfterm -> type -> Type :=
@@ -43,20 +43,20 @@ Lemma generation_app_T : forall s t tau (Gamma : repo), ty_T Gamma (s@t) tau ->
 Proof.
   intros s t tau Gamma H.
   inv H.
-  exists A.
+  exists sigma.
   split; assumption.
 Qed.
 
-Lemma generation_lam_T : forall s A (Gamma : repo) sigma tau, ty_T Gamma (\_ s) A ->
-                        A = sigma ~> tau ->
+Lemma generation_lam_T : forall s rho (Gamma : repo) sigma tau, ty_T Gamma (\_  s) rho ->
+                        rho = sigma ~> tau ->
                         ty_T (sigma :: Gamma) s tau.
 Proof.
   intros.
   ainv.
 Qed.
 
-Lemma generation_var_T : forall x A (Gamma : repo), ty_T Gamma (! x) A ->
-                          nth_error Gamma x = Some A.
+Lemma generation_var_T : forall x rho (Gamma : repo), ty_T Gamma (! x) rho ->
+                          nth_error Gamma x = Some rho.
 Proof.
   intros.
   ainv.
@@ -65,7 +65,7 @@ Qed.
 Lemma ty_app_ex : forall (Gamma : repo) (B:type) s t, ty_T Gamma (App s t) B -> { A & ty_T Gamma t A ->
     ty_T Gamma s (A ~> B) }.
 Proof.
-    intros. ainv. exists A. ainv. 
+    intros. ainv. exists sigma. ainv. 
 Qed.
 
 Fixpoint update_list {A} (l1 : list A) (Su : nat -> option A) : list A :=
@@ -123,7 +123,7 @@ Proof.
     induction s.
     - intros Gamma A. constructor. apply subst_repo_some. inversion X. assumption.
     - intros Gamma A. ainv. econstructor.
-      + pose proof (IHs1 Gamma (A0 ~> A)). asimpl in X. apply X. assumption.
+      + pose proof (IHs1 Gamma (sigma ~> A)). asimpl in X. apply X. assumption.
       + apply IHs2. eassumption.
     - intros Gamma A. ainv. constructor. rewrite subst_repo_cons. eapply IHs. assumption.
 Qed.
@@ -135,13 +135,13 @@ Proof.
     intros.
     induction H0.
     - assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists (A ~> x). exists x0. constructor. assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists A. exists x0. constructor. assumption.
-    - apply IHsubterm. ainv. unfold Typable. exists B. exists (A:: x0). constructor. assumption.
+    - apply IHsubterm. ainv. unfold Typable. exists (sigma ~> x). exists x0. constructor. assumption.
+    - apply IHsubterm. ainv. unfold Typable. exists sigma. exists x0. constructor. assumption.
+    - apply IHsubterm. ainv. unfold Typable. exists tau. exists (sigma:: x0). constructor. assumption.
 Qed.
 
-Lemma mp_gen_T : forall Gamma ms x tau, ty_T Gamma (curry (!x) ms) tau ->
-  { ts & prod (Forall2_T (ty_T Gamma) ms ts) (nth_error Gamma x = Some (make_arrow_type ts tau)) }.
+Lemma mp_gen_T : forall Gamma ms x rho, ty_T Gamma (curry (!x) ms) rho ->
+  { ts & prod (Forall2_T (ty_T Gamma) ms ts) (nth_error Gamma x = Some (make_arrow_type ts rho)) }.
 Proof.
   induction ms using rev_ind_T.
   - intros. ainv. exists []. split.
@@ -161,14 +161,14 @@ Proof.
   - simpl. intros. inversion H.
 Qed.
 
-Lemma subst_arr_is_arr_or_T : forall x t Su t0, x.[Su] = t ~> t0 
-    -> ({st & { st0 &
-          x = st ~> st0 /\ st.[Su] = t /\ st0.[Su] = t0 } }) +
-       ({ a & x = ? a}).
+Lemma subst_arr_is_arr_or_T : forall rho sigma Su tau, rho.[Su] = sigma ~> tau 
+    -> ({sigma' & { tau' &
+          rho = sigma' ~> tau' /\ sigma'.[Su] = sigma /\ tau'.[Su] = tau } }) +
+       ({ a & rho = ? a}).
 Proof.
-  intros. destruct x.
+  intros. destruct rho.
   - right. exists x. auto.
-  - left. exists x1. exists x2.
+  - left. exists rho1. exists rho2.
     split.
     + reflexivity.
     + split; ainv.

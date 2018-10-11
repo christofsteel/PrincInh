@@ -926,7 +926,7 @@ Qed.
       
 Inductive trans_hull {A} (R : list (A * A)) : A -> A -> Type :=
 | trans_R : forall a b, In (a, b) R -> trans_hull R a b
-| trans_trans : forall a b c, trans_hull R a b -> trans_hull R b c -> trans_hull R a c.
+| trans_trans : forall s x t, trans_hull R s x -> trans_hull R x t -> trans_hull R s t.
 
 
 Inductive trans_refl_hull {A} (R: list (A * A)) : A -> A -> Type :=
@@ -1146,7 +1146,7 @@ Defined.
 
 Inductive t_path {A} (R: list (A *A)) : list (A * A) -> A -> A -> Type :=
 | t_path_R : forall a b, In (a, b) R -> t_path R [(a, b)] a b
-| t_path_trans : forall a b c p, In (a, b) R -> t_path R p b c -> t_path R ((a,b) :: p) a c.
+| t_path_trans : forall s x t p, In (s, x) R -> t_path R p x t -> t_path R ((s,x) :: p) s t.
 
 Inductive tr_path {A} (R: list (A *A)) : list (A * A) -> A -> A -> Type :=
 | tr_path_R : forall a b, In (a, b) R -> tr_path R [(a, b)] a b
@@ -1202,24 +1202,24 @@ Proof.
     + subst. simpl. constructor 2. assumption. assumption.
 Qed.
 
-Lemma t_path_ex {A} R (a b : A) : trans_hull R a b ->
-                                   {P & t_path R P a b}.
+Lemma t_path_ex {A} R (s t : A) : trans_hull R s t ->
+                                   {P & t_path R P s t}.
 Proof.
   induction 1.
   - eexists. constructor. assumption.
-  - destruct IHX1. destruct IHX2. exists (x ++ x0). eapply t_path_trans2.
-    + apply t.
+  - destruct IHX1. destruct IHX2. exists (x0 ++ x1). eapply t_path_trans2.
+    + apply t0.
     + assumption.
 Qed.      
 
-Lemma t_path_trh {A} R (a b: A) P : t_path R P a b -> trans_hull R a b.
+Lemma t_path_trh {A} R (s t: A) P : t_path R P s t -> trans_hull R s t.
 Proof.
   induction 1.
   - constructor. assumption.
   - econstructor 2. constructor. apply i. exact IHX.
 Qed.
 
-Lemma t_path_pump {A} R (a b : A) P : t_path R P a b -> forall ab, t_path (ab::R) P a b.
+Lemma t_path_pump {A} R (s t : A) P : t_path R P s t -> forall ab, t_path (ab::R) P s t.
 Proof.
   induction 1.
   - intros. constructor. constructor 2. assumption.
@@ -1262,11 +1262,11 @@ Proof.
               ** apply f. right. exists c'. assumption.
 Defined.
 
-Lemma t_path_trans_R_and {A} {eqdec: EqDec A eq} : forall R (a b a' b' : A) P',
-    t_path ((a', b')::R) P' a b ->  {P & t_path R P a b} + {(a', b') = (a, b)} +
-                                   {P & prod (t_path R P a a') (b = b')} +
-                                   {P & prod (t_path R P b' b) (a = a')} +
-                                   {P1 & {P2 & prod (t_path R P1 a a') (t_path R P2 b' b)}}.
+Lemma t_path_trans_R_and {A} {eqdec: EqDec A eq} : forall R (s t a b : A) P',
+    t_path ((a, b)::R) P' s t ->  {P & t_path R P s t} + {(a, b) = (s, t)} +
+                                   {P & prod (t_path R P s a) (t = b)} +
+                                   {P & prod (t_path R P b t) (s = a)} +
+                                   {P1 & {P2 & prod (t_path R P1 s a) (t_path R P2 b t)}}.
 Proof.
   intros.
   induction X.
@@ -1328,18 +1328,18 @@ Proof.
     + eapply f1. split. apply Htr1. apply Htr2.
 Defined.
 
-Lemma trans_hull_dec {A} {eqdec: EqDec A eq}: forall R (a b :A), trans_hull R a b + (trans_hull R a b -> False).
+Lemma trans_hull_dec {A} {eqdec: EqDec A eq}: forall R (s t :A), trans_hull R s t + (trans_hull R s t -> False).
 Proof.
   intros.
-  destruct (t_path_dec R a b) as [[P Htr]|Htr]. 
+  destruct (t_path_dec R s t) as [[P Htr]|Htr]. 
   - left. eapply t_path_trh. apply Htr.
-  - right. intros. apply t_path_ex in X. destruct X. eapply Htr. apply t.
+  - right. intros. apply t_path_ex in X. destruct X. eapply Htr. apply t0.
 Defined.
 
-Lemma ts_cl_list_dec {A} {eqdec: EqDec A eq}: forall R (a b: A), ts_cl_list R a b + (ts_cl_list R a b -> False).
+Lemma ts_cl_list_dec {A} {eqdec: EqDec A eq}: forall R (s t: A), ts_cl_list R s t + (ts_cl_list R s t -> False).
 Proof.
   intros.
-  destruct (trans_hull_dec (sym_hull_list R) a b).
+  destruct (trans_hull_dec (sym_hull_list R) s t).
   - left. apply trans_sym_ts_cl_list. assumption.
   - right. intros. apply f. apply ts_cl_list_trans_sym. assumption.
 Defined.

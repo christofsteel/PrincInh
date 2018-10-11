@@ -13,8 +13,8 @@ Import EqNotations.
 
 (* Long typings for terms and nfterms *)
 Inductive long_ty_T (Gamma : repo) : term -> type -> Type :=
-| Long_I_T s A B : long_ty_T (A :: Gamma) s B ->
-        long_ty_T Gamma (Lam s) (Arr A B)
+| Long_I_T s sigma tau : long_ty_T (sigma :: Gamma) s tau ->
+        long_ty_T Gamma (\_ s) (sigma ~> tau)
 | Long_E_T x ms ts a : nth_error Gamma x = Some (make_arrow_type ts (? a)) 
         -> Forall2_T (long_ty_T Gamma) ms ts -> 
         long_ty_T Gamma (curry (! x) ms) (? a).
@@ -170,8 +170,8 @@ Proof.
   ainv. exists (x ~> x0). constructor. assumption.
 Qed.
 
-Lemma long_general_T : forall m Su tau Gamma,
-  ty_T Gamma m tau -> long_ty_T Gamma..[Su] m tau.[Su] -> long_ty_T Gamma m tau.
+Lemma long_general_T : forall m Su rho Gamma,
+  ty_T Gamma m rho -> long_ty_T Gamma..[Su] m rho.[Su] -> long_ty_T Gamma m rho.
 Proof.
   intros m.
   remember (term_length m) as lengthm.

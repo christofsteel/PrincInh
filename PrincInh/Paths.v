@@ -62,7 +62,7 @@ Fixpoint dom_P (rho: type) : list path :=
   end.
 
 Lemma dom_P_some : forall pi rho, In pi (dom_P rho) ->
-                             { tau & P rho pi = Some tau}.
+                             { rho' & P rho pi = Some rho'}.
 Proof.
   induction pi.
   - intros. exists rho. destruct rho; reflexivity.
@@ -141,10 +141,10 @@ Proof.
   - intros. rewrite app_assoc in H. apply dom_P_last in H. apply IHpi'. assumption.
 Qed.
 
-Lemma P_prefix {rho pi pi' tau}: P rho (pi ++ pi') = Some tau -> {tau' & P rho pi = Some tau'}.
+Lemma P_prefix {rho pi pi' rho'}: P rho (pi ++ pi') = Some rho' -> {rho'' & P rho pi = Some rho''}.
 Proof.
   intros.
-  revert rho tau pi' H.
+  revert rho rho' pi' H.
   induction pi.
   - intros. exists rho. reflexivity.
   - intros. simpl. destruct a; destruct rho; try discriminate H;
@@ -191,16 +191,16 @@ Proof.
       * rewrite P_ok_Tgt. rewrite  P_ok_Tgt. apply IHrho2.
 Qed.
 
-Lemma P_ok_P {rho pi tau pr}: P_ok rho pi pr = tau <-> P rho pi = Some tau.
+Lemma P_ok_P {rho pi rho' pr}: P_ok rho pi pr = rho' <-> P rho pi = Some rho'.
 Proof.
   split.
-  - revert rho tau pr. induction pi.
-    + simpl. intros rho tau _. apply some_eq.
+  - revert rho rho' pr. induction pi.
+    + simpl. intros rho rho' _. apply some_eq.
     + simpl. intros. destruct rho.
       * inversion pr. discriminate H0. inversion  H0.
       * destruct a; eapply IHpi; exact H.
-  - revert rho tau pr. induction pi.
-    + simpl. intros rho tau _ eq. apply some_eq. exact eq.
+  - revert rho rho' pr. induction pi.
+    + simpl. intros rho rho' _ eq. apply some_eq. exact eq.
     + simpl. intros. destruct rho.
       * destruct a; discriminate H.
       * destruct a.
@@ -431,11 +431,11 @@ Proof.
 Qed.
 
 Lemma P_ok_replace_last : forall pi rho dir1 dir2 pr1 sigma, P_ok rho (pi ++ [dir1]) pr1 = sigma ->
-                                                {pr2 & {tau & P_ok rho (pi ++ [dir2]) pr2 = tau}}.
+                                                {pr2 & {rho' & P_ok rho (pi ++ [dir2]) pr2 = rho'}}.
 Proof.
   intros.
   pose proof dom_P_replace_last _ _ _ dir2 pr1.
-  exists H0. pose proof dom_P_some _ _ H0 as [tau HP]. exists tau.
+  exists H0. pose proof dom_P_some _ _ H0 as [rho' HP]. exists rho'.
   apply P_ok_P. assumption.
 Qed.
 
@@ -477,8 +477,8 @@ Proof.
       simpl in H. assumption.
 Qed.
 
-Lemma P_path_make_arrow_type {tau pi n rho}: P tau (pi ++ repeat Tgt n)  = Some rho ->
-                                      {ts & P tau pi = Some (make_arrow_type ts rho) /\ length ts = n}.
+Lemma P_path_make_arrow_type {tau pi n rho}: P rho (pi ++ repeat Tgt n)  = Some tau->
+                                      {ts & P rho pi = Some (make_arrow_type ts tau) /\ length ts = n}.
 Proof.
   revert pi rho tau.
   induction n; intros pi rho tau.
@@ -490,19 +490,19 @@ Proof.
     split. assumption. rewrite app_length. simpl. rewrite HLen. omega.
 Qed.
 
-Lemma make_arrow_type_dirs {tau ts a n}: 
-      make_arrow_type ts (? a) = tau ->
-      P tau (repeat Tgt n ++ [Src]) = nth_error ts n.
+Lemma make_arrow_type_dirs {rho ts a n}: 
+      make_arrow_type ts (? a) = rho ->
+      P rho (repeat Tgt n ++ [Src]) = nth_error ts n.
 Proof.
-  revert ts tau.
+  revert ts rho.
   induction n. 
-  - intros. simpl. destruct tau.
+  - intros. simpl. destruct rho.
     + pose proof make_arrow_type_ts_is_nil H as [Hts Hrho].
       subst. reflexivity.
     + destruct ts.
       * discriminate H.
       * simpl in H. injection H. intros. subst. reflexivity.
-  - intros. asimpl. destruct tau.
+  - intros. asimpl. destruct rho.
     + pose proof make_arrow_type_ts_is_nil H as [Hts Hrho].
       subst. reflexivity.
     + destruct ts.

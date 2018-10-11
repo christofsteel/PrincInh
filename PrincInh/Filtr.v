@@ -97,10 +97,10 @@ Proof.
   reflexivity.
 Qed.
 
-Fixpoint TD_f {Gamma m tau} (proof : ty_T Gamma m tau) : list type :=
+Fixpoint TD_f {Gamma m rho} (proof : ty_T Gamma m rho) : list type :=
   match proof with
-  | Ty_Var _ x rho eqproof => [rho]
-  | Ty_Lam _ s sigma tau' innerproof => (sigma ~> tau') :: TD_f innerproof
+  | Ty_Var _ x rho' eqproof => [rho']
+  | Ty_Lam _ s sigma tau innerproof => (sigma ~> tau) :: TD_f innerproof
   | Ty_App _ s t A B proof1 proof2 => B::(TD_f proof1 ++ TD_f proof2)
   end.
 
@@ -116,8 +116,8 @@ Qed.
 
 
     
-Lemma filter_deriv {m Gamma tau}: forall (X : type -> bool) (proof : ty_T Gamma m tau),
-    (forall tau', In tau' (TD_f proof) -> X tau' = true) -> (forall a, ty_T (repo_filt X a Gamma) m (filtration X a tau)).
+Lemma filter_deriv {m Gamma rho}: forall (X : type -> bool) (proof : ty_T Gamma m rho),
+    (forall rho', In rho' (TD_f proof) -> X rho' = true) -> (forall a, ty_T (repo_filt X a Gamma) m (filtration X a rho)).
 Proof.
   intros.
   induction proof.
@@ -128,22 +128,22 @@ Proof.
     + apply H. simpl. right. apply TD_last.
     + apply H. simpl. left. reflexivity.
   - econstructor.
-    + instantiate (1:=filtration X a A). rewrite <- filt_split.
+    + instantiate (1:=filtration X a sigma). rewrite <- filt_split.
       * apply IHproof1. intros. apply H. simpl. right. apply in_or_app. left. assumption.
       * apply H. simpl. left. reflexivity.
       * apply H. simpl. right. apply in_or_app. left. apply TD_last.
     + apply IHproof2. intros. apply H. simpl. right. apply in_or_app. right. assumption.
 Qed.
       
-Lemma In_TD_dec {Gamma m tau} : forall (deriv : ty_T Gamma m tau) tau', {In tau' (TD_f deriv)} + {~(In tau' (TD_f deriv))}.
+Lemma In_TD_dec {Gamma m rho} : forall (deriv : ty_T Gamma m rho) rho', {In rho' (TD_f deriv)} + {~(In rho' (TD_f deriv))}.
 Proof.
   intros.
   apply In_dec.
   apply eq_dec_type.
 Defined.
 
-Definition TD_b {Gamma m tau} (deriv : ty_T Gamma m tau) tau' : bool :=
-  if (In_TD_dec deriv tau') then true else false.
+Definition TD_b {Gamma m rho} (deriv : ty_T Gamma m rho) rho' : bool :=
+  if (In_TD_dec deriv rho') then true else false.
 
 Lemma TD_b_corr {Gamma m tau} {proof : ty_T Gamma m tau}: (forall tau' : type, In tau' (TD_f proof) -> TD_b proof tau' = true) .
 Proof.

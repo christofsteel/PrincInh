@@ -796,7 +796,7 @@ Proof.
     + apply lt_n_S. assumption.
 Qed.
 
-Lemma Long_closed : forall m tau, nfty_long [] m tau -> closed m.
+Lemma Long_closed : forall m rho, nfty_long [] m rho -> closed m.
 Proof.
   intros. unfold closed. apply Long_repo_size in X. asimpl in X. omega.
 Qed.
@@ -1333,11 +1333,11 @@ Definition replaceable_paths_cond m pi pi' : bool :=
   if (R_m_ts_dec m pi pi') then true else
     if (pi == pi') then true else false.
 
-Definition replaceable_paths tau m pi : list path :=
-  filter (replaceable_paths_cond m pi) (dom_P tau).
+Definition replaceable_paths rho m pi : list path :=
+  filter (replaceable_paths_cond m pi) (dom_P rho).
 
-Definition replace_all_paths (tau: type)(pis : list path) (b : type) :=
-  fold_left (replace_at_path b) pis tau.
+Definition replace_all_paths (rho: type)(pis : list path) (b : type) :=
+  fold_left (replace_at_path b) pis rho.
 
 Lemma replace_at_nil : forall b tau, replace_at_path b tau [] = b.
 Proof.
@@ -1766,8 +1766,8 @@ Proof.
   pose proof (rdec pi).
   destru*)
   Admitted.
-Lemma long_stays_long : forall m tau pi pr a, nfty_long [] m tau -> P_ok tau pi pr = ? a ->
-                                         nfty_long [] m (replace_all_paths tau (replaceable_paths tau m pi) (fresh_type tau)).
+Lemma long_stays_long : forall m rho pi pr a, nfty_long [] m rho -> P_ok rho pi pr = ? a ->
+                                         nfty_long [] m (replace_all_paths rho (replaceable_paths rho m pi) (fresh_type rho)).
 Proof.
   (*
   intros.
