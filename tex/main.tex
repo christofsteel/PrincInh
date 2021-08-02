@@ -1,0 +1,348 @@
+\documentclass[paper=a4,fontsize=11pt,BCOR=20mm,toc=bib,twoside, DIV=12, headsepline, open=right,ngerman,rgb,listof=totoc]{scrreprt}
+\usepackage{babel}
+\usepackage[disableredefinitions]{complexity}
+\usepackage[pdftitle={Prinzipale Inhabitation im einfach getypten Lambda-Kalkuel},
+pdfauthor={Christoph Stahl},pdfencoding=auto]{hyperref}
+\usepackage[pass]{geometry}
+%\usepackage[left=2.5cm, right=3.5cm,bottom=3.5cm, top=3cm]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[backend=biber]{biblatex}
+\usepackage[final]{microtype}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage[linesnumbered, ruled, vlined]{algorithm2e}
+\usepackage{subcaption}
+\usepackage{cleveref}
+\usepackage[most]{tcolorbox}
+\usepackage[newfloat,draft=false]{minted}
+\usepackage{csquotes}
+%\usepackage{todonotes}
+\usepackage{proof}
+\usepackage{eurosym}
+\usepackage{multirow}
+\usepackage[absolute%,showboxes
+]{textpos}
+\usepackage{newunicodechar}
+\usepackage{scrlayer-scrpage}
+\clearscrheadfoot
+\automark{chapter}
+\ohead{\headmark}
+\ofoot[\pagemark]{\pagemark}
+\usetikzlibrary{arrows}
+%\usepackage{xpatch,letltxmacro}
+%\LetLtxMacro{\cminted}{\minted}
+%\let\endcminted\endminted
+%\xpretocmd{\cminted}{\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}}{}{}
+
+% Hurenkinder und Schusterjungen verhindern
+\clubpenalty10000
+\widowpenalty10000
+\displaywidowpenalty=10000
+
+\setkomafont{captionlabel}{\bfseries}
+\addbibresource{literatur.bib}
+\definecolor{TUgreen}{RGB}{132,184,24}
+
+
+
+\tcbuselibrary{minted,skins,breakable}
+
+\newunicodechar{∀}{$\forall$}
+\newunicodechar{→}{$\rightarrow$}
+\newunicodechar{∃}{$\exists$}
+\newunicodechar{λ}{$\lambda$}
+\newunicodechar{σ}{$\sigma$}
+\newunicodechar{π}{$\pi$}
+\newunicodechar{τ}{$\tau$}
+\newunicodechar{ρ}{$\rho$}
+\newunicodechar{Γ}{$\Gamma$}
+\newunicodechar{Δ}{$\Delta$}
+\newunicodechar{↔}{$\leftrightarrow$}
+\newunicodechar{→}{$\rightarrow$}
+\newunicodechar{⇒}{$\Rightarrow$}
+\newunicodechar{⇝}{$\leadsto$}
+\newunicodechar{¬}{$\neg$}
+\newunicodechar{∧}{$\land$}
+\newunicodechar{∨}{$\lor$}
+\setminted{encoding=utf8}
+\makeatletter
+\DeclareRobustCommand*{\escapeus}[1]{%
+    \begingroup\@activeus\scantokens{#1\endinput}\endgroup}
+\begingroup\lccode`\~=`\_\relax
+\lowercase{\endgroup\def\@activeus{\catcode`\_=\active \let~\_}}
+\newcommand{\minted@def@optcl@filterswitch}[2]{%
+    \define@booleankey{minted@opt@g}{#1}%
+    {\minted@addto@optlistcl{\minted@optlistcl@g}{#2}%
+        \@namedef{minted@opt@g:#1}{true}}
+    {\minted@addto@optlistcl{\minted@optlistcl@g}{}%
+        \@namedef{minted@opt@g:#1}{false}}
+    \define@booleankey{minted@opt@g@i}{#1}%
+    {\minted@addto@optlistcl{\minted@optlistcl@g@i}{#2}%
+        \@namedef{minted@opt@g@i:#1}{true}}
+    {\minted@addto@optlistcl{\minted@optlistcl@g@i}{}%
+        \@namedef{minted@opt@g@i:#1}{false}}
+    \define@booleankey{minted@opt@lang}{#1}%
+    {\minted@addto@optlistcl@lang{minted@optlistcl@lang\minted@lang}{#2}%
+        \@namedef{minted@opt@lang\minted@lang:#1}{true}}
+    {\minted@addto@optlistcl@lang{minted@optlistcl@lang\minted@lang}{}%
+        \@namedef{minted@opt@lang\minted@lang:#1}{false}}
+    \define@booleankey{minted@opt@lang@i}{#1}%
+    {\minted@addto@optlistcl@lang{minted@optlistcl@lang\minted@lang @i}{#2}%
+        \@namedef{minted@opt@lang\minted@lang @i:#1}{true}}
+    {\minted@addto@optlistcl@lang{minted@optlistcl@lang\minted@lang @i}{}%
+        \@namedef{minted@opt@lang\minted@lang @i:#1}{false}}
+    \define@booleankey{minted@opt@cmd}{#1}%
+    {\minted@addto@optlistcl{\minted@optlistcl@cmd}{#2}%
+        \@namedef{minted@opt@cmd:#1}{true}}
+    {\minted@addto@optlistcl{\minted@optlistcl@cmd}{}%
+        \@namedef{minted@opt@cmd:#1}{false}}
+}
+\minted@def@optcl@filterswitch{kwrename}{-F kwrenamefilter}
+\makeatother
+
+\allowdisplaybreaks
+\newenvironment{cminted}[1]{\VerbatimEnvironment\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}\begin{center}\begin{minted}{#1}}{\end{minted}\end{center}}
+\renewcommand{\baselinestretch}{1.25}
+\newcommand{\thethesistype}{Art der Arbeit}
+\newcommand{\thefirstsupervisor}{Name des Erstgutachters}
+\newcommand{\thesecondsupervisor}{Name des Zweitgutachters}
+\newcommand{\thechair}{Lehrstuhlbezeichnung}
+\newcommand{\thechairshort}{LS-Nummer}
+\newcommand{\thechairurl}{https://ls14-www.cs.tu-dortumund.de}
+
+\newcommand{\thesistype}[1]{\renewcommand{\thethesistype}{#1}}
+\newcommand{\firstsupervisor}[1]{\renewcommand{\thefirstsupervisor}{#1}}
+\newcommand{\secondsupervisor}[1]{\renewcommand{\thesecondsupervisor}{#1}}
+\newcommand{\chair}[3]{\renewcommand{\thechair}{#1}\renewcommand{\thechairshort}{#2}\renewcommand{\thechairurl}{#3}}
+\newcommand{\draftbox}[1]{#1}
+\renewcommand{\draftbox}[1]{\fbox{#1}}
+
+\title{Prinzipale Inhabitation im einfach\\getypten Lambda-Kalkül}
+\author{Christoph Stahl}
+\date{12. Oktober 2018}
+\thesistype{Masterarbeit}
+\firstsupervisor{Prof. Dr. Jakob Rehof}
+\secondsupervisor{M.\,Sc. Jan Bessai}
+\chair{Lehrstuhl für Software Engineering}{LS-14}{https://ls14-www.cs.tu-dortmund.de/}
+\def\UrlBreaks{\do\/\do-}
+%\pagecolor{gray!20}
+\Crefname{figure}{Abbildung}{Abbildungen}
+\Crefname{section}{Abschnitt}{Abschnitte}
+\Crefname{algocf}{Algorithmus}{Algorithmen}
+\tcbset{arc=0mm,breakable, enhanced jigsaw, breakable, lines before break=3}
+\newclass{\APTIME}{APTIME}
+\newcounter{globalcounter}
+%\newcommand{\newnumthmbox}[2]{\newtcolorbox[auto counter,number within=chapter]{#1}[1]{enlarge top initially by=2mm,title=#2~\thetcbcounter: ##1, title after break=#2~\thetcbcounter\ (Fortsetzung)}}
+%\newcommand{\newthmbox}[2]{\newtcolorbox{#1}{enlarge top initially by=2mm,title=#2~\thetcbcounter, title after break=#2~\thetcbcounter\ (Fortsetzung)}}
+%\newcommand{\newnumthmbox}[3]{\newtcolorbox[auto counter,number within=chapter,crefname={#2}{#3}]{#1}[2][]{title=#2~\thetcbcounter: ##2, title after break=#2~\thetcbcounter\ (Fortsetzung), ##1}}
+%\newcommand{\newnumthmbox}[3]{\newtcbtheorem{#1}{#2}{}{}}
+
+\newcommand{\newnumthmbox}[4]{\newtcbtheorem[use counter=globalcounter,number within=chapter,crefname={#2}{#3}]{#1}{#2}{fonttitle=\bfseries,
+    enlarge top initially by=2mm,title=#2~\thetcbcounter: ##1,
+    title after break=\small#2~\thetcbcounter\ (Fortsetzung)
+}{#4}}
+
+
+
+
+    %[2][]{title=#2~\thetcbcounter: ##2, title after break=#2~\thetcbcounter\ (Fortsetzung), ##1}}
+\newcommand{\newthmbox}[3]{\newtcolorbox{#1}{fonttitle=\bfseries, title=\textbf{#2~\thetcbcounter}, title after break=\small#2~\thetcbcounter\ (Fortsetzung)}}
+%\newtcolorbox[auto counter,number within=chapter]{lemma}[1]{enlarge top initially by=2mm,title=Lemma~\thetcbcounter: #1, title after break=Lemma~\thetcbcounter\ (Fortsetzung)}
+\newnumthmbox{lemma}{Lemma}{Lemmata}{lem}
+\newnumthmbox{theorem}{Theorem}{Theoreme}{thm}
+\newnumthmbox{proposition}{Proposition}{Propositionen}{prop}
+\newnumthmbox{corollary}{Korollar}{Korollare}{cor}
+\newnumthmbox{definition}{Definition}{Definitionen}{def}
+\newnumthmbox{example}{Beispiel}{Beispiele}{ex}
+%\newnumthmbox{example}{Beispiel}
+\newthmbox{notation}{Notation}{Notationen}
+\newthmbox{convention}{Konvention}{Konventionen}
+\newcommand{\Proof}{\tcblower \textbf{Beweis:} }
+\newcommand{\Proofidea}{\tcblower \textbf{Beweisidee:} }
+
+\renewcommand{\fcolorbox}[4][]{#4}
+
+\newcommand{\icoq}[1]{\mintinline[breaklines, mathescape, kwrename]{coq}{#1}}
+
+\newtcolorbox[use counter=globalcounter,number within=chapter, Crefname={Listing}{Listings}, list inside=lst]{multicode}[4][]{enhanced, 
+        label={lst:#1},
+        list entry={\protect\numberline{\thetcbcounter}~#4 (\texttt{#2})},
+    fonttitle=\bfseries,
+    enlarge top initially by=2mm,
+    leftupper=5.5mm,
+    overlay={\begin{tcbclipinterior}\fill[black!25] (frame.south west)
+            rectangle ([xshift=6.6mm]frame.north west);\end{tcbclipinterior}},
+    title={Listing~\thetcbcounter: \texttt{#2}\hfill{#3}}}
+
+\newcommand{\coqref}[1]{\hyperref[lst:#1]{\icoq{#1}} (\Cref{lst:#1})}
+\newcommand{\coqrefnl}[1]{\hyperref[lst:#1]{\icoq{#1}}}
+\newcommand{\coqreff}[2]{\hyperref[#1]{\icoq{#2}} (\Cref{#1})}
+\newcommand{\coqreffnl}[2]{\hyperref[#1]{\icoq{#2}}}
+
+\newenvironment{mcode}[2][]
+{\VerbatimEnvironment
+        \begin{minted}[
+        linenos, breaklines, firstnumber=#2, numbersep=1mm, kwrename, mathescape,
+        #1]{coq}}
+        {\end{minted}}
+
+
+\newtcblisting[use counter=globalcounter,number within=chapter,Crefname={Listing}{Listings}, list inside=lst]{code}[4][]{
+    label={lst:#1},
+    listing only,
+    list entry={\protect\numberline{\thetcbcounter}~\escapeus{\texttt{#1}} (\texttt{#2})},
+    listing engine=minted,    
+    minted language=coq, 
+    minted options={linenos, breaklines, firstnumber=#4, numbersep=1mm, kwrename, mathescape},
+    leftupper=5.5mm,
+    enhanced,
+    fonttitle=\bfseries,
+    enlarge top initially by=2mm,
+    overlay={\begin{tcbclipinterior}\fill[black!25] (frame.south west)
+%            rectangle ([xshift=5.6mm]frame.north west);\end{tcbclipinterior}},
+            rectangle ([xshift=6.6mm]frame.north west);\end{tcbclipinterior}},
+    title={Listing~\thetcbcounter: \texttt{#2}\hfill{#3}}}
+
+\newtcblisting[use counter=globalcounter,number within=chapter,Crefname={Listing}{Listings}, list inside=lst]{ccode}[5][]{
+    label={lst:#1},
+    listing only,
+    list entry={\protect\numberline{\thetcbcounter}~#5 (\texttt{#2})},
+    listing engine=minted,    
+    minted language=coq, 
+    minted options={linenos, breaklines, firstnumber=#4, numbersep=1mm, kwrename, mathescape},
+    leftupper=5.5mm,
+    enhanced,
+    fonttitle=\bfseries,
+    enlarge top initially by=2mm,
+    overlay={\begin{tcbclipinterior}\fill[black!25] (frame.south west)
+            rectangle ([xshift=6.6mm]frame.north west);\end{tcbclipinterior}},
+    title={Listing~\thetcbcounter: \texttt{#2}\hfill{#3}}}
+
+%\newenvironment{code}[3]{begdef}{enddef}
+
+%\newtcolorbox{notation}{enlarge top initially by=2mm, title=Notation, title after break=Notation (Fortsetzung)}
+%\newtcolorbox{convention}{enlarge top initially by=2mm, title=Konvention, title after break=Konvention (Fortsetzung)}
+%\newtcolorbox[auto counter,number within=chapter]{definition}[1]{enlarge top initially by=2mm,  title=Definition~\thetcbcounter: #1, title after break=Definition~\thetcbcounter\ (Fortsetzung),}
+%\newtcolorbox[auto counter,number within=chapter, crefname={Beispiel}{Beispiele}]{example}[1][]{enlarge top initially by=2mm,title=Beispiel~\thetcbcounter, title after break=Beispiel~\thetcbcounter\ (Fortsetzung), #1}
+%\newenvironment{remark}{\textbf{Bemerkung: }}{
+%    
+%}
+\newenvironment{remark}{\begin{tcolorbox}
+        \textbf{Bemerkung: }}{\end{tcolorbox}}
+%\newtcolorbox[auto counter,number within=chapter]{remark}{enlarge top initially by=2mm,arc=0mm,title=Bemerkung~\thetcbcounter, breakable, title after break=Bemerkung~\thetcbcounter\ (Fortsetzung), lines before break=3}
+
+\newcommand{\coq}{\textsc{Coq}}
+\newcommand{\F}{\ensuremath{\mathcal{F}}}
+\newcommand{\src}{\texttt{Src}}
+\newcommand{\tgt}{\texttt{Tgt}}
+\newcommand{\judges}{\ensuremath{\vartriangleright}}
+\newcommand{\dom}{\text{dom}}
+\newcommand{\codom}{\text{codom}}
+\newcommand{\abs}{\text{(abs)}}
+\newcommand{\varapp}{\text{(varapp)}}
+\newcommand{\var}{\text{(var)}}
+\newcommand{\tlong}{\text{(long)}}
+\newcommand{\app}{\text{(app)}}
+\newcommand{\tLong}{\text{Long}}
+\newcommand{\revfrac}[2]{\frac{#2}{#1}}
+\newcommand{\Type}{\texttt{Type}}
+\newcommand{\Prop}{\texttt{Prop}}
+\newcommand{\Set}{\texttt{Set}}
+\SetKw{Fail}{fail}
+\newenvironment{icode}{\begin{tcolorbox}}
+{\end{tcolorbox}}
+\newcommand{\QA}[2]{\begin{description}
+        \item[\texttt{IN:}] \mintinline[kwrename]{coq}{#1}
+        \item[\texttt{OUT:}] \mintinline[kwrename]{coq}{#2}
+    \end{description}}
+%\newcommand{\QA}[2]{\VerbatimEnvironment
+%    \begin{minted}[kwrename]{coq}
+%    forall x, x -> x.
+%    \end{minted}
+%    }
+
+\begin{document}
+\makeatletter
+\begin{titlepage}
+\newgeometry{left=2.7cm,top=1.4cm,right=2.7cm,bottom=2cm}
+\sffamily
+%\begin{textblock*}{8.9cm}(3cm,5.4cm)
+\begin{textblock*}{9.1cm}(2.9cm,5.3cm)
+\textblockcolour{TUgreen!15}
+\noindent
+\begin{center}
+\begin{minipage}[t][8.8cm][c]{8.7cm}    
+%\begin{minipage}[t][8.9cm][c]{8.5cm}
+\begin{center}
+\large
+{\Large \thethesistype}\\[1cm]
+\textbf{\@title}\\[1cm]
+\@author\\
+\@date
+\end{center}
+\end{minipage}
+\end{center}
+\end{textblock*}
+\noindent\includegraphics[width=8cm]{tud_logo_rgba}\\[\fill]
+\noindent Gutachter:\\
+\thefirstsupervisor\\
+\thesecondsupervisor\\[2.5cm]
+\begin{minipage}[b]{.55\textwidth}
+Technische Universität Dortmund\\
+Fakultät für Informatik\\
+\thechair~(\thechairshort)\\
+\url{\thechairurl}
+\end{minipage}\hfill
+%\begin{minipage}[b]{.45\textwidth}
+%\raggedleft
+%In Kooperation mit:\\
+%Fakultätsname\\
+%Lehrstuhl-/Institutsbezeichnung
+%\end{minipage}
+\end{titlepage}
+%\newenvironment{cminted}
+% {\RecustomVerbatimEnvironment{Verbatim}{BVerbatim}{}%
+%  \def\FV@BProcessLine##1{%
+%    \hbox{%
+%      \hbox to\z@{\hss\theFancyVerbLine\kern\FV@NumberSep}%
+%      \FancyVerbFormatLine{##1}%
+%    }%
+%  }%
+%  \VerbatimEnvironment
+%  \setbox\z@=\hbox\bgroup
+%  \begin{minted}{coq}}
+% {\end{minted}\egroup
+%  \leavevmode\vbox{\hrule\kern2mm\box\z@\kern2mm\hrule}}
+\makeatother
+\shipout\null
+\pagenumbering{roman}
+%\pagecolor{white}
+\restoregeometry
+\tableofcontents
+%\clearpage
+\cleardoubleemptypage
+\pagenumbering{arabic}
+\include{chapters/einleitung}
+\include{chapters/stlc}
+\include{chapters/pinzipal_inhab}
+\include{chapters/konstr}
+\include{chapters/eigenschaften}
+\include{chapters/fazit}
+%\nocite{*}
+%\sloppy
+\cleardoublepage
+% \phantomsection
+%\addcontentsline{toc}{chapter}{\listfigurename}
+\printbibliography
+\include{erklaerung}
+%\cleardoublepage
+%\listoffigures
+%\cleardoublepage
+%\phantomsection
+%\addcontentsline{toc}{chapter}{Listingverzeichnis}
+%\tcblistof[\chapter*]{lst}{Listingverzeichnis}
+\end{document}

@@ -1,0 +1,53 @@
+\chapter{Einleitung}
+
+Aus der Softwareentwicklung wissen wir, dass Programmierer nicht unfehlbar sind. Ein wichtiges Werkzeug, das viele Sprachen bereitstellen, um Fehler zu vermeiden, ist die Typisierung. Variablen und Funktionen können so festen Typen zugewiesen werden, die einen Hinweis auf die Verwendung geben. Durch statische Analyse des Quelltextes kann dann überprüft werden, ob diese Hinweise beachtet werden. Betrachten wir hier die statisch typisierte Sprache \textsc{Java} mit dem folgenden Codefragment.
+\begin{minted}{java}
+public class Add {
+  public static int add2(int i) {
+      return i + 2;
+  }
+}
+\end{minted}
+Die Funktion \texttt{Add.add2} ist somit eine Funktion, die einen ganzzahligen Wert als Eingabe erwartet und einen ganzzahligen Wert als Rückgabe hat. Über das Typsystem von \textsc{Java} kann nun entschieden werden, dass \texttt{Add.add2(2)} einen gültigen, aber \texttt{Add.add2("{}Esel")} einen ungültigen Aufruf an \texttt{Add.add2} darstellt. Insbesondere wissen wir, dass \texttt{Add.add2(2)} selbst wieder eine ganze Zahl ist und infolgedessen \texttt{Add.add2(Add.add2(2))} ein gültiger Aufruf ist. Offensichtlich ist \texttt{Add.add2("{}Esel")} ein Programmierfehler. Für trivialen Fälle, wie der hier präsentierte, lässt sich dieser Fehler auch sehr schnell von Hand finden und würde in echten Softwareprojekten so natürlich nicht auftreten. Echte Softwareprojekte sind jedoch deutlich komplexer. Falls der String \texttt{"{}Esel"} nicht als Stringliteral, sondern über die Rückgabe einer anderen Funktion an \texttt{Add.add2} übergeben wird, lässt sich dies nicht mehr so einfach nachvollziehen. Der falsche Aufruf könnte hier beispielsweise durch eine Änderung der Schnittstelle oder durch die Verwechslung der entsprechenden Funktion auftreten. Je komplexer eine Software wird, desto höher ist die Wahrscheinlichkeit, dass solche Fehler auftreten. Typisierte Sprachen helfen diese Fehler bereits zur Compilezeit zu entdecken und verhindern so fehlerhaftes Verhalten in der Ausführung.
+
+In dieser Arbeit werden wir uns mit dem theoretischen Konstrukt des \emph{einfach getypten Lambda-Kalküls} befassen. Dieser ist eine syntaktisch einfache Sprache zusammen mit einem einfachen Typsystem. Trotz dieser Einfachheit übertragen sich viele Ergebnisse, die im einfach getypten Lambda-Kalkül erforscht wurden, auf komplexere Typsysteme. Wir können somit den einfach getypten Lambda-Kalkül als Kern für diese komplexeren Typsysteme betrachten. Gerade wegen der Einfachheit können viele theoretische Aussagen einfacher getroffen und bewiesen werden. Der einfach getypte Lambda-Kalkül agiert nicht nur als Kern vieler Typsysteme, er entspricht sogar genau einem Fragment der Logik. Es gilt, dass Typen Aussagen entsprechen, und Terme, die zu diesen Typen passen, den Beweisen für diese Aussage entsprechen.\footnote{Dies werden wir im Rahmen dieser Arbeit auch betrachten.}
+
+Wir werden in dieser Arbeit den Begriff des prinzipalen Typs betrachten. Der prinzipale Typ eines Terms ist der allgemeinste Typ eines Terms. Um eine Vorstellung zu bekommen, was ein allgemeinster Typ ist, betrachten wir erneut die Sprache \textsc{Java}, deren Typsystem Typvariablen über Generics unterstützt. Hierfür betrachten wir das folgende Codefragment.
+\begin{minted}{java}
+public class Id {
+    public static int id(int i) { 
+        return i;
+    }
+}
+\end{minted}
+
+Es ist klar, dass \texttt{Id.id} genau den Wert zurückgibt, den die Methode übergeben bekommt. Die hier angegebene Definition der Identität ist jedoch beschränkt auf \texttt{int}. Derselbe Methodenrumpf kann jedoch für die Identität beliebiger Typen verwendet werden. Mittels Generics können wir einen Typ für die Methode angeben, der nicht auf \texttt{int} beschränkt ist.
+
+\begin{minted}{java}
+public class Id_T {
+  public static <T> T id(T i) { 
+    return i;
+  }
+}
+\end{minted}
+
+Die Methode \texttt{Id\_T.id} typt hier den Term \texttt{return i;} mit seinem allgemeinsten Typen, \texttt{T $\to$ T}.
+
+Eine wichtige Fragestellung im Umgang mit Typsystemen ist die der Inhabitation. Die Frage nach der Inhabitation ist die Frage, ob es zu einem gegebenen Typen einen Term gibt, der erfolgreich mit dem gegebenen Typen getypt werden kann. Diese Frage ist keineswegs trivial. Gehen wir davon aus, dass wir eine generische Typvariable \texttt{T} haben. Um \texttt{T} zu inhabitieren, müssten wir eine Funktion schreiben, die ohne Eingabe, jeden beliebigen Typen hat. Dies ist nicht ohne weiteres möglich\footnote{Tatsächlich kann in Java einfach \texttt{null} zurückgegeben werden, da \texttt{null} jeden Typ inhabitiert. In dieser theoretischen Behandlung betrachten wir jedoch diese und ähnliche Fälle nicht, in denen beliebige Typen inhabitiert werden können. Des Weiteren haben bestimmte Java- und Scalaversionen einen Fehler, der es erlaubt das Typsystem zu überlisten und beliebige Typen zu inhabitieren.\cite{unsound}}. 
+
+Die Inhabitation ist in der Hinsicht interessant, da aus einem Algorithmus, der die Inhabitation entscheidet, auf einfache Art und Weise genau der Term extrahiert werden kann, der den Typ inhabitiert. Wenn über ein geeignetes Typsystem nun mittels Typen eine Spezifikation für Programme kodiert wird, lassen sich somit ganze Programme synthetisieren\cite{cls}. Des Weiteren lassen sich über den Zusammenhang zur Logik Aussagen über die Inhabitation von Typen, auf die Beweisbarkeit von logischen Aussagen übertragen.
+
+Von besonderen Interesse ist hier auch die Frage der prinzipalen Inhabitation. Während die Frage der Inhabitation der Existenz eines Terms zu einem gegebenen Typen entspricht, entspricht die prinzipale Inhabitation der Existenz eins Terms, sodass der gegebene Typ der allgemeinste Typ des Terms ist. Übertragen auf die Synthese von Programmen entspricht dies einem Programm, dass genauestens einer Spezifikation entspricht; übertragen auf die Logik entspricht es einem Beweis, der nicht mehr beweist, als die gesuchte Aussage.
+
+\cite{dudenhefner} zeigt, dass die Frage nach der prinzipalen Inhabitation weder deutlich schwieriger, noch deutlich einfacher als die der normalen Inhabitation zu beantworten ist. Beide Probleme sind \PSPACE-vollständig. Das Enthaltensein in \PSPACE{} folgt aus einem in \cite{dudenhefner} aufgestellten Algorithmus, der zum einen die prinzipale Inhabitation entscheidet und zum anderen die entsprechende Platzschranke einhält. Die \PSPACE-Schwierigkeit ist in \cite{dudenhefner} mit einer Reduktion von dem ebenfalls \PSPACE-vollständigen Problem der normalen Inhabitation, eingeschränkt auf eine bestimmte Art von Typen, bewiesen. Hierfür wird aus einem inhabitierten Typ $\tau$ ein prinzipal inhabitierter Typ $\tau^*$ erstellt, indem dieser mit Teiltypen von sich selber erweitert wird. Die genaue Konstruktion ist an dieser Stelle zunächst nebensächlich, relevant ist hier, dass der resultierende Typ $\tau^*$ stark von dem Ursprungstyp $\tau$ abhängt. Die Arbeit stellt des Weiteren die Vermutung auf, dass eine sehr ähnliche Konstruktion für Typen, die keiner Einschränkung unterliegen, möglich ist. 
+
+Das Beantworten der Vermutung ist nicht Teil dieser Arbeit, es werden jedoch Grundlagen gelegt, diese computergestützt zu beweisen, sowie die in \cite{dudenhefner} geführten Beweise zu verifizieren. Insbesondere werden die dort genutzten Techniken der Teilformelfiltration sowie des Teilformelkalküls mittels des Beweishelfers \coq{} formalisiert. Hierfür wurden die wichtige Lemmata, die den Zusammenhang zwischen diesen Techniken und der prinzipalen Inhabitation zeigen, implementiert. \cite{dudenhefner} nennt beide Techniken die \emph{algorithmische Essenz} der prinzipalen Inhabitation. 
+
+\section{Vorgehen}
+Zunächst wird in \Cref{ch:stlc} der einfach getypte Lambda-Kalkül als theoretische Grundlage vorgestellt. Hierfür werden zunächst $\lambda$-Terme und einfache Typen unabhängig voneinander eingeführt. Anschließend werden diese in einem Kalkül miteinander verbunden. Zusätzlich werden grundlegende Lemmata aufgestellt und bewiesen, die helfen ein fundiertes Verständnis des einfach getypten Lambda-Kalküls zu erhalten, auf das in den nachfolgenden Kapiteln aufgebaut werden kann. Die Struktur des Kapitels, sowie ein Großteil der Definitionen folgt \cite{lecturesCH}.
+
+Auf diesen Grundlagen aufbauend, wird in \Cref{ch:princ} die prinzipale Inhabitation sowie die in \cite{dudenhefner} vorgestellte Teilformelfiltration und der Teilformelkalkül präsentiert. Beide Techniken werden hierfür zunächst eingeführt und dann jeweils ein Bezug zur prinzipalen Inhabitation hergestellt. Hierfür werden die in \cite{dudenhefner} aufgestellten Lemmata sowie Beweise vorgestellt und die Ideen zu Letzteren verdeutlicht.
+
+In \Cref{ch:coq} wird die im Rahmen dieser Arbeit angefertigte Formalisierung der Theorie beschrieben. Hierfür werden die in der Implementierung verwendeten Datentypen sowie Beweismechanismen vorgestellt um sowohl Lemma 14, als auch Lemma 25 aus \cite{dudenhefner} sowie der hierfür notwendigen Hilfslemmata zu verifizieren. Lemma 14 stellt einen Bezug zwischen der Teilformelfiltration und der prinzipalen Inhabitation her; Lemma 25 ist ein wichtiges Lemma, um einen Bezug zwischen dem Teilformelkalkül und der prinzipalen Inhabitation herzustellen\footnote{Diese entsprechen \Cref{lem:filtrprinc} und \Cref{lem:fz} in dieser Arbeit}. Die Beweise der weiteren Lemmata wurden aus Zeitgründen nicht implementiert, jedoch wurden diese zum Teil ohne Beweis formalisiert. Die Beweise und Formalisierungen werden mittels des Beweishelfers \coq{} in der Version 8.8.0 formuliert. Hierfür wird zudem die Bibliothek \textsc{Autosubst} verwendet, die speziell für die Handhabung von Substitutionen in Termen entwickelt wurde. In dem Kapitel werden nicht die Implementierungen der Beweise angegeben, sondern lediglich die Formalisierung der Lemmata aus \Cref{ch:princ}. Dies entspricht an dieser Stelle einer API-Dokumentation und soll sowohl helfen, die hier vorgestellte Implementierung nachzuvollziehen, als auch helfen, auf der Implementierung aufzubauen, um beispielsweise diese zu vervollständigen. Auch wird nicht jedes verwendete Lemma und jede verwendete Konstruktion explizit vorgestellt, da viele lediglich als Hilfestellung für die Implementierung der \emph{wichtigen} Lemmata fungieren. Von diesen Hilfskonstruktionen werden nur die Wichtigsten vorgestellt, sodass dies dem Verständnis der Beweisführung hilft.
+
+Abschließend wird ein Fazit gezogen. Insbesondere wird evaluiert, inwieweit sich das Verifizieren in \coq{} und das schriftliche Beweisen unterscheiden. Zudem wird ein Ausblick gegeben, wie Prinzipalität in anderen Bereichen, als der Inhabitation betrachtet werden kann.

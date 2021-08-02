@@ -1,0 +1,535 @@
+\chapter{Prinzipalität}
+\label{ch:princ}
+In diesem Kapitel werden zunächst die Prinzipalität und die prinzipale Inhabitation eingeführt, um darauf aufbauend zwei Methoden vorzustellen, die helfen, automatisiert zu entscheiden, ob ein gegebener Typ prinzipal zu einem gegebenen Term ist. 
+
+In \Cref{sec:filtr} und \ref{sec:SfC} wird an vielen Stellen auf ausführliche Beweise verzichtet, da diese in der Implementierung zu \Cref{ch:coq} formalisiert und automatisiert geprüft wurden. Für das Verständnis und die Nachvollziehbarkeit werden hier nur Beweisideen präsentiert.
+
+\section{Prinzipale Typen}
+Betrachten wir wie in \Cref{longnf} den Term $\tI$ mit den dort vorgestellten Typen $a\to a$ und $(a\to b)\to a\to b$. Wir wissen, dass der Term $\tI$ beide Typen inhabitiert. Wenn wir beide Typen miteinander vergleichen, fällt auf, dass $(a \to b)\to a \to b$ die Einschränkung vorgibt, dass der Term $\tI$ einen Term mit Funktionstypen $(a\to b)$ als Eingabe erhält, wohingegen $a \to a$ keine solche Einschränkung vorgibt. Genauer können wir sagen, dass $a \to a$ ein allgemeinerer Typ als $(a \to b)\to a \to b$ ist.
+
+Um die Idee des allgemeineren Typs zu formalisieren, nutzen wir die Typsubstitution (siehe \Cref{def:typesubst}). Wenn wir mittels der Typsubstitution alle Vorkommen eines Typatoms durch einen anderen Typen ersetzen, konkretisieren wir damit den Ursprungstypen und schränken diesen ein. In unserem Beispiel wäre die Typsubstitution mit $Su(a)=(a\to b)$ gegeben.
+
+\begin{definition}{Allgemeinerer Typ}{subtype}
+    Falls es eine Substitution $Su$ gibt, sodass $Su(\rho')=\rho$ gilt, nennen wir $\rho'$ einen allgemeineren Typen als $\rho$ und $\rho$ einen Subtypen von $\rho'$.
+    
+    Fall es weiter keine Substitution $Su^{-1}$ gibt, sodass $Su^{-1}(\rho)=\rho'$, nennen wir $\rho'$ einen echt allgemeineren Typen als $\rho$ und $\rho$ einen echten Subtypen von $\rho'$.
+\end{definition}
+
+\begin{notation}
+    Falls $\rho$ ein Subtyp von $\rho'$ ist, schreiben wir auch $\rho\preceq\rho'$. Falls $\rho$ ein echter Subtyp von $\rho'$ ist, schreiben wir auch $\rho\prec\rho'$.
+\end{notation}
+
+\begin{remark}
+    Der Begriff des Subtyps ist nicht mit dem Begriff des Teiltyps (siehe \Cref{def:subformula}) zu verwechseln.
+\end{remark}
+
+\begin{lemma}{}{subord}
+    Die Relation $\preceq$ ist eine transitiv-reflexive Ordnung.
+    \Proof
+    \begin{description}
+        \item[Reflexiv:] Wir wählen die Identität als Substitution.
+        \item[Transitiv:] Sei $\rho_1 \preceq \rho_2$ gegeben durch $Su_1(\rho_2) = \rho_1$ und $\rho_2\preceq \rho_3$, gegeben durch $Su_2(\rho_3) = \rho_2$. Es gibt nun $Su_3 = Su_1 \circ Su_2$ mit $Su_3(\rho_3) = Su_1(Su_2(\rho_3)) = Su_1(\rho_2) = \rho_1$, also $\rho_1\prec\rho_3$.
+    \end{description}
+\end{lemma}
+
+Wir betrachten nun, was es bedeutet, dass ein Typ ein allgemeinster Typ zu einem Term ist.
+
+\begin{definition}{Prinzipaler Typ}{princ}
+    Wir nennen einen Typen $\rho$ den \emph{allgemeinsten} oder \emph{prinzipalen} Typen eines \tlambda-Terms $M$, wenn gilt $\vdash M : \rho$ und für jeden Typen $\rho'$ mit $\vdash M : \rho'$ es eine Substitution $Su$ gibt, sodass $Su(\rho)=\rho'$.
+\end{definition}
+
+Damit eine Substitution $Su$ eine Umkehrsubstitution $Su^{-1}$ hat, muss $Su$ eine Umbenennung gewesen sein, da ansonsten ein atomarer Typ auf einen Funktionstypen abgebildet wurde, was durch Substitution nicht umkehrbar ist. 
+Wir können daraus direkt folgern, dass es für eine Substitution $Su$ nur zwei Möglichkeiten gibt, damit es keine entsprechende Umkehrsubstitution $Su^{-1}$ gibt.
+
+\begin{lemma}{}{nonsubst}
+    Falls $Su(\rho) = \rho'$, aber es keine Substitution $Su'$ mit $Su'(\rho') = \rho$ gibt, muss $Su$ mindestens eine der beiden Eigenschaften erfüllen.
+    \begin{enumerate}
+        \item $Su$ bildet zwei verschiedene Typatome $a, b$ auf denselben Typen $\vartheta$ ab.
+        \item $Su$ bildet einen atomaren Typen $a$ auf einen Funktionstypen ab.
+    \end{enumerate}
+\Proof
+Eine Typsubstitution $Su$ bildet von atomaren Typen in einfache Typen ab. Die folgende Aufteilung von Substitutionen ist somit erschöpfend.
+\begin{enumerate}
+        \item $Su$ bildet alle Typatome auf verschiedene Typatome ab.
+        \item $Su$ bildet zwei verschiedene Typatome $a, b$ auf denselben Typen $\vartheta$ ab.
+        \item $Su$ bildet einen atomaren Typan $a$ auf einen Funktionstypen ab.
+\end{enumerate}
+Im ersten Fall gibt es eine Umkehrsubstitution $Su^{-1}$. 
+\end{lemma}
+
+\begin{example}{}{}
+    $a\to a$ ist der prinzipale Typ von $\tI$.
+    \Proof
+    Zunächst können wir feststellen, dass $\vdash \tI:a\to a$. Nehmen wir nun an, dass es einen Typen $\rho$ mit $\vdash \tI : \rho$ gibt, sodass $Su(\rho) = a \to a$, aber es keine Substitution $Su^{-1}$ mit $Su^{-1}(a \to a) = \rho$ gibt. Nach \Cref{lem:nonsubst} muss $\rho$ entweder ein Pfeiltyp $b\to c$ oder $b$ sein. Beide Typen werden jedoch nicht von \tI{} inhabitiert.
+\end{example}
+
+\begin{definition}{Prinzipaler Inhabitant}{princinh}
+    Wenn $\vdash M:\rho$ und $\rho$ der prinzipale Typ von $M$ ist, dann nennen wir $M$ einen \emph{prinzipalen Inhabitanten} von $\rho$.
+\end{definition}
+
+Prinzipalität, so wie wir sie definiert haben, bleibt nicht unter \tbeta-Reduktion erhalten. Betrachten wie hierfür den Typen $a\to a\to a$. Der Term hat den prinzipalen Inhabitanten $(\lambda x~y~z.\tK(x~y)~(x~z))~\tI$\cite[S. 177]{Hindley2008}. Evaluieren wir den Term durch die \tbeta-Reduktion, erhalten wir den Term $\lambda y~z.\tK~y~z$. Wir können zeigen, dass $\vdash \lambda y~z.\tK~y~z : a \to b \to a$, aber es gibt keine Substitution $Su$, sodass $Su(a\to a\to a) = a \to b \to a$. Damit ist $a \to a \to a$ nicht der prinzipale Typ von $\lambda y~z.\tK~y~z$. Dies hängt damit zusammen, dass Redexe innerhalb eines Termes zusätzliche Einschränkungen an einen Typen einführen, die durch die \tbeta-Reduktion aufgelöst werden. Diese Beobachtung ist eng verwandt mit der Bemerkung zu \Cref{lem:subjred}.
+
+Wir betrachten im Folgenden nur prinzipale Inhabitanten in \tbeta-Normalform, so genannte normale prinzipale Inhabitanten.
+
+\begin{definition}{Normaler prinzipaler Inhabitant}{nprincinh}
+    Wir nennen einen \tlambda-Term $M$ einen \emph{normalen prinzipalen Inhabitanten} eines Typs $\rho$, wenn $M$ in $\beta$-Normalform ist und $\rho$ der prinzipale Typ von $M$ ist.
+\end{definition}
+
+Das folgende Lemma erlaubt es uns, auf prinzipale Inhabitanten in \teta-langer Normalform zu beschränken.
+\begin{lemma}{\cite[8A11.2]{Hindley2008}}{princlong}
+    Falls ein Term $M$ in \tbeta-Normalform den prinzipalen Typen $\rho$ hat, so hat auch seine eindeutige \teta-Expansion $M^+\in\Long(\rho)$ den prinzipalen Typ $\rho$.
+    \Proof
+    Siehe \cite[8A11.2]{Hindley2008}.
+\end{lemma}
+
+Analog zu \Cref{sec:inhab} lässt sich ein Inhabitationsbegriff für prinzipale Typen und Terme in \tbeta-Normalform formulieren.
+
+\begin{definition}{Prinzipales Inhabitationproblem}{princinhab}
+    Gegegen ein einfacher Typ $\rho$, gibt es einen \tlambda-Term $M$ in \tbeta-Normalform, sodass $\rho$ der prinzipale Typ von $M$ ist?
+\end{definition}
+
+\cite{dudenhefner} zeigt, dass das Problem \PSPACE-vollständig ist. Wir werden hier zwei Konstruktionen, die in der Arbeit für den Beweis der Vollständigkeit genutzt werden, zunächst erarbeiten und in \Cref{ch:coq} in \coq{} formalisieren. Somit wird eine Grundlage geschafft, um die \PSPACE-Vollständigkeit zu verifizieren und die Vermutung, die am Ende der von \cite{dudenhefner} aufgestellt wurde, zu beweisen. Diese Arbeit wird jedoch nur die Verifikation der Grundlagen behandeln.
+
+\section{Teilformelfiltration}
+\label{sec:filtr}
+Wir werden nun eine Methodik vorstellen, mit der wir ein notwendiges Kriterium für die Prinzipalität formulieren und beweisen können. Ursprünglich in \cite{duden2} für Intersektionstypen entwickelt, wurde die Teilformelfiltration (\emph{Subformula Filtration}) in \cite{dudenhefner} für die einfachen Typen adaptiert. 
+
+Betrachten wir zunächst den Term $\tK=\lambda x~y.x$, seinen Typ $a \to (b\to c) \to a$ und explizit die Typableitung für $\vdash \tK : a\to (b\to c)\to a$ in \Cref{fig:typeKb}. Es fällt auf, dass der Typ $b\to c$ für $y$ nur durch die Abstraktion erzwungen wird, aber kein Teilterm von \tK{} mit $b\to c$ getypt wird. Wir könnten somit genau diese eine Instanz von $b\to c$ durch einen beliebigen Typen ersetzen und könnten \tK{} immer noch mit dem resultierendem Typen typen. Ersetzen wir hingegen genau ein $a$ durch einen beliebigen anderen Typen, können wir \tK{} nicht mehr mit dem Ergebnistypen typen. 
+\begin{remark}
+    Wenn wir den Typen $a \to (b\to c)\to a$ betrachten, könnten wir zu der Vermutung kommen, dass $b\to c$ beliebig wählbar ist, da es einzeln in dem Typen vorkommt. Dies ist nicht der Fall. Betrachten wir alternativ den Typen $a\to a\to a$, der ebenfalls von $\tK$ inhabitiert wird. In diesem Beispiel können wir das mittlere $a$ beliebig ersetzen, obwohl $a$ mehrfach in dem Typen vorkommt.   
+\end{remark}
+
+Diese Beobachtungen lassen sich als Begriff der relevanten Typen formalisieren.
+
+\begin{definition}{Relevante Typen}{TD}
+    Gegeben eine Typableitung $\mathcal{D}$, dann definieren wir die Menge $T(\mathcal{D})$ an \emph{relevanten Typen} in $\mathcal{D}$ folgendermaßen.
+    \[T(\mathcal{D})=\{\rho\mid \Gamma\vdash M:\rho \text{ kommt in }\mathcal{D}\text{ vor}\}\]
+\end{definition}
+\begin{figure}
+    \[
+    \infer[\text{(abs)}]{\vdash \lambda x~y.x:a\to (b\to c) \to a}{
+        \infer[\text{(abs)}]{x:a\vdash \lambda y.x : (b\to c)\to a}{\infer[\text{(var)}]{x:a, y:b\to c \vdash x : a}{}}}
+    \]
+    \caption{Typableitung für  $\vdash \tK:a \to (b\to c) \to a$}
+    \label{fig:typeKb}
+\end{figure}
+
+\begin{example}{}{relevK}
+    Sei $\mathcal{D}$ die Typableitung in \Cref{fig:typeKb}, dann ist $T(\mathcal{D}) = \{a, (b\to c)\to a, a\to (b\to c) \to a\}$.
+\end{example}
+
+%Wir werden später sehen, dass relevante Typen stark mit der Prinzipalität von Typen zu einem Term zusammenhängen. 
+Intuitiv ist klar, dass, wenn $\mathcal{D}\judges\emptyset\vdash M:\rho$ gilt und wir alle irrelevanten Typen $\rho\notin T(\mathcal{D})$, die als Teiltyp von $\rho$ vorkommen, durch einen beliebigen anderen Typen ersetzen, wir eine Typableitung $\mathcal{D}'$ finden, sodass $\mathcal{D}'$ den Term $M$ mit dem resultierenden Typen typt, da wir nur irrelevante Typen ersetzt haben. Um diese Intuition zu formalisieren, formulieren wir zunächst eine allgemeine Funktion, die in einem Typen alle Teiltypen, die für eine gegebene Menge irrelevant sind, durch einen neuen Typen ersetzt.
+
+\begin{definition}{Filtratrionsfunktion}{filtr}
+    Sei $X$ eine Menge an Typen und $a\in\At$ ein Typatom, dann definieren wir die \emph{Filtrationsfunktion} $\F^a_X$ wie folgt:
+    
+     \[\begin{array}{rcll}
+             \F^a_X(b) =& &a& \text{falls }b\in\At\\
+             \multirow{2}{*}{$\F^a_X(\sigma\to\tau)=$} & \hspace{-0.3cm}
+             \multirow{2}{*}{$\left\{
+             \begin{array}{l}
+             \\
+             \\
+             \end{array}\right.$}\hspace{-0.7cm}
+             & \F^a_X(\sigma) \to \F^a_X(\tau) & \text{falls }\sigma\to\tau\in X\text{ und }\tau\in X\\
+             & & a & \text{ansonsten}
+    \end{array}\]
+\end{definition}
+    \begin{remark}
+        \begin{itemize}
+        \item Analog zu der Typsubstitution können wir die Filtration über Typkontexte fortsetzen. Auch hier schreiben wir $\F^a_X(\Gamma)$, da anhand der Eingabe immer eindeutig ist, ob es sich um die Filtration oder um die Fortsetzung auf Typkontexte handelt.
+        \item Trotz Ähnlichkeit ist die Filtration \emph{keine} Substitution nach \Cref{def:typesubst}. Während die Filtration es erlaubt, dass ein Funktionstyp durch ein Typatom ersetzt wird, kann dies durch eine Substitution nicht geschehen.
+        \end{itemize}
+    \end{remark}
+
+Wir stellen fest, dass in \Cref{ex:relevK} nicht nur der Typ $a$ relevant ist, sondern auch Typen, deren Teiltyp ein nicht relevanter Typ ist. Hierfür können wir den Typ $(b\to c)\to a\in T(\mathcal{D})$ betrachten, der relevant ist, wohingegen $b,c \notin T(\mathcal{D})$. In diesem Fall ist die Struktur des Typs relevant, also dass es sich um einen Funktionstypen, $\sigma\to a$ für irgendein $\sigma$, handelt. Typen, die für eine Typableitung $\mathcal{D}$ relevant sind, können somit irrelevante Teiltypen haben. Wichtig ist hier, dass dies weder die Teiltypen relevant, noch den Gesamttypen irrelevant macht. Unsere Filtrationsfunktion ersetzt somit nicht den kompletten Funktionstypen, sondern nur das $b\to c$ in $(b\to c)\to a$, da $(b\to c)\notin T(\mathcal{D})$.
+\newcommand{\FCD}{\ensuremath{\F^d_{T(\mathcal{D})}}}
+\begin{example}{}{}
+    Sei $\mathcal{D}$ die Ableitung in \Cref{fig:typeKb}, dann ist 
+    \begin{align*}
+    \FCD(a\to (b\to c) \to a) &= \FCD(a)\to\FCD((b\to c)\to a) \\
+    & = a \to \FCD(b\to c)\to\FCD(a)\\ &=a\to d\to a.
+    \end{align*}
+\end{example}
+
+Wir können nun unsere Intuition formalisieren, dass wir irrelevante Typen ersetzen können, dabei aber einen Typen erhalten, der den Ursprungsterm immer noch inhabitiert. Wir stellen sogar die verallgemeinerte Aussage auf, dass die relevanten Typen nur eine Teilmenge der nicht zu ersetzenden Typen sein muss. Zunächst setzen die Filtrationsfunktion auf Typableitungen fort. Auch hierbei nennen wir die Funktion $\F^a_X$, da aufgrund der Eingabe eindeutig ist, welche Ausprägung der Funktion $\F^a_X$ gemeint ist.
+
+\begin{definition}{}{}
+    Sei $a\in\At$ ein Typatom, $X$ eine Menge an Typen, $M\in\Lambda$ ein \tlambda-Term, $\rho\in\T$ ein einfacher Typ, $\Gamma$ ein Typkontext und $\mathcal{D}$ eine Typableitung, sodass $\mathcal{D}\judges\Gamma\vdash M : \rho$. Wir definieren die Fortsetzung einer Filtration $\F^a_X$ auf Typableitungen folgendermaßen. 
+    \begin{align*}
+    \F^a_X(\mathcal{D}) = &\left\{
+    \infer[(X)]{\F^a_X(\Gamma')\vdash M' :\F^a_X(\rho')}
+    {\F^a_X(\Gamma_1)\vdash M_1 : \F^a_X(\rho_1)\ldots \F^a_X(\Gamma_n)\vdash M_n : \F^a_X(\rho_n)} \right.\\ &\;\left|\quad \infer[(X)]{\Gamma'\vdash M':\rho'}{\Gamma_1\vdash M_1 : \rho_1 \ldots \Gamma_n\vdash M_n : \rho_n} \in\mathcal{D}
+    \right\}
+    \end{align*}
+\end{definition}             
+\begin{remark}
+    Wir interpretieren hier den Ableitungsbaum als Menge von angewandten Inferenzregeln, sodass $\mathcal{D}\judges \Gamma\vdash M:\rho$ genau dann gilt, wenn es eine Regel $\revfrac{\Gamma\vdash M:\rho}{X_1\ldots X_n}\in\mathcal{D}$ gibt und alle Wege an Inferenzregeln in Inferenzregeln ohne Hypothese enden.
+    
+    Das Ergebnis einer Filtration erfüllt nicht zwangsweise die Bedingung an eine korrekte Typableitung, \Cref{lem:filtrtype} wird aber zeigen, dass durch die Filtration eine gültige Ableitung entsteht.
+\end{remark}
+
+
+\begin{lemma}{}{filtrtype}
+    Falls $\mathcal{D}\judges\Gamma\vdash M : \rho$ und $T(\mathcal{D})\subseteq X$, dann gilt für jedes $a\in\At$, $\F^a_X(\mathcal{D})\judges\F^a_X(\Gamma)\vdash M : \F^a_X(\rho)$.
+    \Proof
+    Wir können eine Induktion über die Ableitung $\mathcal{D}$ durchführen. 
+    \begin{description}
+        \item[Induktionsanfang:] Es gilt \[\mathcal{D}=\left\{\infer[\text{(var)}]{x:\rho\vdash x :\rho}{}\right\},\] sowie \[\F^a_X(\mathcal{D})=\left\{\infer[\text{(var)}]{x:\F^a_X(\rho)\vdash x:\F^a_X(\rho)}{}\right\}\] und damit $\F^a_X(\mathcal{D})\judges x:\F^a_X\vdash x:\F^a_X(\rho)$.
+\item[Fall (abs):] Es gilt $\mathcal{D}\judges\Gamma\vdash \lambda x.M : \sigma\to\tau$ und zu zeigen ist $\F^a_X(\mathcal{D})\judges\F^a_X(\Gamma)\vdash\lambda x.M : \F^a_X(\sigma\to\tau)$. Unsere Induktionshypothese sagt, dass $\F^a_X(\Gamma, x:\sigma)\vdash M:\F^a_X(\tau)$ und der Ableitungsbaum ist die Filtration über $\mathcal{D}$ ohne den letzten Schritt.
+
+Es gilt somit\[\revfrac{\Gamma\vdash \lambda x.M : \sigma\to\tau}{\Gamma, x:\sigma \vdash M: \tau}\text{(abs)}~\in\mathcal{D},\] sowie für $\tau, \sigma\to\tau\in T(\mathcal{D})\subseteq X$, dass \[\F^a_X(\sigma\to\tau)=\F^a_X(\sigma)\to\F^a_X(\tau)\] und \[\F^a_X(\Gamma, x:\sigma) = \F^a_X(\Gamma), x: \F^a_X(\sigma).\] Wir wissen dann, dass 
+\[\revfrac{\F^a_X(\Gamma)\vdash\lambda x.M:\F^a_X(\sigma)\to \F^a_X(\tau)}{\F^a_X(\Gamma), x:\F^a_X(\sigma)\vdash M :\F^a_X(\tau)}\text{(var)}~\in\F^a_X(\mathcal{D})\] und dies ist eine gültige (var)-Regel, deren Hypothese über unsere Induktionshypothese bewiesen wird.
+\item[Fall (app)] Es gilt $\mathcal{D}\judges\Gamma\vdash M~N:\tau$ und zu zeigen ist $\F^a_X(\mathcal{D})\judges\F^a_X(\Gamma)\vdash M~N:\F^a_X(\tau)$. Wir haben zwei Induktionshypothesen, $\F^a_X(\Gamma)\vdash M:\F^a_X(\sigma\to\tau)$ und $\F^a_X(\Gamma)\vdash N:\F^a_X(\sigma)$, die jeweils von der Filtration der beiden Teilbäume in $\mathcal{D}$ bewiesen werden.
+
+Es gilt somit
+\[\revfrac{\Gamma\vdash M~N:\tau}{\Gamma\vdash M:\sigma\to\tau \qquad \Gamma\vdash N:\sigma}\text{(app)}~\in\mathcal{D},\] sowie für $\sigma, \tau,\sigma\to\tau\in T(\mathcal{D})\subseteq X$, dass \[\F^a_X(\sigma\to\tau) = \F^a_X(\sigma)\to\F^a_X(\tau).\] Wir wissen somit, dass
+\[\revfrac{\F^a_X(\Gamma)\vdash M~N:\F^a_X(\tau)}{\F^a_X(\Gamma)\vdash M:\F^a_X(\sigma)\to\F^a_X(\tau) \qquad \F^a_X(\Gamma)\vdash N:\F^a_X(\sigma)}\text{(app)}~\in\F^a_X(\mathcal{D})\] und dies ist eine gültige (app)-Regel, deren Hypothesen über die beiden Induktionshypothesen bewiesen werden.
+    \end{description}
+\end{lemma}
+\begin{remark}
+    In \cite{dudenhefner} wurde eine Einschränkung von \Cref{lem:filtrtype} gezeigt, die erforderte, dass $a$ frisch ist. Das Lemma gilt sogar für beliebige $a$. Des Weiteren wurde in \cite{dudenhefner} der resultierende Baum nicht explizit konstruiert, sondern nur bewiesen, dass der Term mit dem filtrierten Typen ableitbar ist. Die hier vorgestellte Erweiterung erlaubt es uns direkt den resultierenden Beweisbaum anzugeben.
+    
+    Dieser Beweis ist hier ausführlicher dargelegt, da wir in \Cref{ch:coq} nur die Existenz eines Ableitungsbaumes beweisen. Dies reicht für die weitere Behandlung aus.
+\end{remark}
+\begin{example}{}{filtrK}
+    Sei $\mathcal{D}$ erneut die Ableitung aus \Cref{fig:typeKb}, dann ist $\F^d_{T(\mathcal{D})}(\mathcal{D})$ der folgende Beweisbaum.
+    \[\infer[\text{(abs)}]{\vdash\lambda x~y.x:a\to d\to a}{\infer[\text{(abs)}]{x:a\vdash \lambda y.x:d\to a}{\infer[\text{(var)}]{x:a, y:d\vdash x:a}{}}}
+    \]
+\end{example}
+Die Filtration hat in \Cref{ex:filtrK} den irrelevanten Teiltypen $b\to c$ ersetzt und hat gezeigt, dass der zweite Parameter von \tK{} nicht zwangsläufig eine Funktion sein muss, sondern ein beliebiger Typ $d$ sein kann.
+
+Der resultierende Typ $a\to d\to a$ ist insbesondere der prinzipale Typ von \tK, dies gilt aber nicht allgemein. Es ist sogar so, dass für eine Typableitung $\mathcal{D}\judges\Gamma\vdash M:\rho$ und $T(\mathcal{D})\subseteq X$ nicht zwangsweise gilt, dass $\rho\preceq\F^a_X(\rho)$, selbst, wenn $a$ ein frisches Typatom ist, wie \Cref{ex:notsub} zeigt.
+\begin{example}{}{notsub}
+    Sei $\mathcal{D}$ eine Typableitung mit $\mathcal{D}\judges\Gamma\vdash\lambda x~y~z.x:a\to(b\to c)\to(c\to d)\to a$, dann ist $\F^e_{T(\mathcal{D})}(a\to(b\to c)\to(c\to d)\to d)=a\to e\to e\to a$, aber $a\to(b\to c)\to(c\to d)\to a\not\preceq a\to e\to e\to a$, da $e$ entweder zu $(b\to c)$ oder zu $(c\to d)$ substituiert werden kann, aber nicht zu beiden.
+\end{example}
+
+Dass dennoch ein starker Zusammenhang zwischen filtrierten Typen und Prinzipalität existiert, zeigt das folgende \Cref{lem:filtrprinc}, in dem wir über die Filtration ein notwendiges Kriterium für die Prinzipalität zeigen.
+
+\begin{lemma}{}{filtrprinc}
+    Falls $\mathcal{D}\judges\emptyset\vdash M : \rho$ und $\rho$ einen Teiltypen $\sigma\to\tau$ enthält, sodass $\tau\notin T(\mathcal{D})$, dann hat $M$ nicht den prinzipalen Typen $\rho$.
+    \Proof
+    Wir zeigen das Lemma durch Widerspruch. Nehmen wir zunächst an, dass $M$ den prinzipalen Typen $\rho$ hat. Betrachten wir die Typableitung $\mathcal{D}$. Grundsätzlich wissen wir über \Cref{lem:filtrtype}, dass eine Filtration mit von $\mathcal{D}$ mit $F^a_{T(\mathcal{D})}$ ebenfalls eine gültige Typableitung ist. Es gilt $\F^a_{T(\mathcal{D})}(\mathcal{D})\judges\emptyset\vdash M : \F^a_{T(\mathcal{D})}(\rho)$. Da $\tau\notin T(\mathcal{D})$ gilt, gibt es in $F^a_{T\mathcal{D}}(\rho)$ an der Stelle, an der in $\rho$ sich der Teiltyp $\sigma\to\tau$ befand, entweder keinen Teiltypen, da ein größerer Teiltyp von $\rho$ bereits auf $a$ abgebildet wurde, oder $\sigma\to\tau$ selbst wurde auf $a$ abgebildet.
+    Es gibt somit es keine Substitution $Su$, sodass $Su(\rho) = \F^a_X(\rho)$, da Substitutionen \emph{größere} Typen nicht auf kleinere Typen abbilden können. Siehe hierfür auch die Bemerkung zu \Cref{def:filtr}.
+\end{lemma}
+
+\section{Teilformelkalkül}
+\label{sec:SfC}
+
+Die Teilformelfiltration erlaubt es uns, unnötige Strukturen innerhalb eines Typen zu eliminieren. Es ist klar, dass ein prinzipaler Typ keine unnötigen Strukturen mehr beinhaltet. Betrachten wir aber \Cref{ex:notsub}, sehen wir, dass dies nicht ausreicht, um prinzipale Typen zu erhalten. In dem Beispiel wurden sowohl $y$ und $z$ mit $e$ getypt. Damit verlangt der resultierende Typ, dass diese Eingaben denselben Typen haben müssen. Dies muss offensichtlich nicht gelten. 
+
+In diesem Abschnitt werden wir einen Kalkül kennenlernen, mithilfe dessen wir Teiltypen innerhalb eines Typen in Relation setzen können, um anzugeben, dass sie denselben Typen haben müssen.
+Hierfür benötigen wir eine Methode, um Teiltypen eines Typen zu adressieren. Betrachten wie dazu den Typen $\rho = a \to (b\to c)\to(c\to d) \to a$. Die Menge der Teiltypen von $\rho$ ist $\{a\to (b\to c) \to (c\to d)\to a, (b\to c) \to (c\to d)\to a, (c\to d)\to a, b\to c, c\to d, a, b, c, d\}$
+% $\{a\to b\to a, b \to a, b, a\}$
+. Es fällt auf, dass obwohl $a$ und $c$ zweimal in $\rho$ enthalten sind, diese jeweils nur einmal als Teiltyp in der Menge vorkommen. Um explizit verschiedene Instanzen von $a$ bzw. $c$ innerhalb $\rho$ zu referenzieren führen wir \emph{Pfade} in Typen ein. Grundsätzlich kann jeder einfache Typ als binärer Baum interpretiert werden, dessen innere Knoten mit $\to$ und dessen Blätter mit Typatomen beschriftet sind. Der Typ $a\to (b\to c)\to(c\to d)\to a$ entspricht dem Baum in \Cref{fig:Ktree}.
+\begin{figure}
+    \begin{center}
+    \begin{tikzpicture}[level/.style={sibling distance=30mm/#1}, level distance=10mm]
+    \node (root) {$\to$}
+        child {node (s) {$a$}}
+        child {node (t) {$\to$}
+            child {node (ts) {$\to$}
+                child {node (tss) {$b$}}
+                child {node (tst) {$c$}}                
+            }
+            child {node (tt) {$\to$} 
+                child {node (tts) {$\to$}
+                    child {node (ttss) {$c$}}
+                    child {node (ttst) {$d$}}                    
+                }
+                child {node (ttt) {$a$}}
+            }
+        };
+%    \node (root) at (0,0) {$\to$};
+%    \node (a1) [below left of=root] {$a$};
+%    \node (arr) [below right of=root] {$\to$};
+%    \node (b) [below left of=arr] {$\to$};
+%    \node (b1) [below left of=b] {$b$};
+%    \node (b2) [below right of=b] {$c$};
+%   \node (a2) [below right of=arr] {$a$};    
+%    \draw (root) -- (a1); 
+%    \draw (root) -- (arr);
+%    \draw (arr) -- (b);
+%    \draw (arr) -- (a2);
+    \end{tikzpicture}
+\end{center}
+    \caption{Der Baum zu $a\to (b\to c) \to (c\to d)\to a$}
+    \label{fig:Ktree}
+\end{figure}
+
+Um nun zwischen den beiden $a$ unterscheiden zu können, können wir angeben, welchen Weg wir im Baum gehen. Das erste $a$ erreichen wir, indem wir einmal links gehen, das zweite $a$, indem wir dreimal rechts gehen. Dies lässt sich durch \Cref{def:path} formalisieren.
+
+\begin{definition}{Pfad im Typ}{path}
+ Wir definieren Pfade in einem Typen als Strings über dem Alphabet $\{\src,\tgt\}$. Wir bezeichnen die Menge an aller Pfade mit $\Pi = \{\src,\tgt\}^*$.
+ 
+ Jeder Typ $\rho$ induziert eine partielle Funktion $P_\rho : \Pi \nrightarrow \T$ mit
+ \begin{align*}
+ P_\rho(\epsilon) &= \rho\\
+ P_{\sigma\to\tau}(\src\cdot\pi) &= P_\sigma(\pi)\\
+ P_{\sigma\to\tau}(\tgt\cdot\pi) &= P_\tau(\pi).
+ \end{align*}
+ 
+ $\text{dom}(P_\rho)$ ist somit die Menge aller möglichen Pfade in $\rho$ und $\text{codom}(P_\rho)$ ist die Menge aller Teiltypen in $\rho$. Siehe hierfür auch \Cref{def:subformula}.
+ \end{definition}
+\begin{notation}
+    Wir schreiben abkürzend $\src^n$ bzw. $\tgt^n$, anstelle von $\underbrace{\src\cdot\ldots\cdot\src}_{n-\text{mal}}$ bzw. $\underbrace{\tgt\cdot\ldots\cdot\tgt}_{n-\text{mal}}$.
+\end{notation}
+\begin{example}{}{}
+    Sei $\rho = a \to (b\to c)\to (c\to d)\to a$, dann ist $P_\rho(\src) = a$ und $P_\rho(\tgt\cdot\tgt\cdot\tgt) = a$ und $\text{dom}(P_\rho)=\{\epsilon, \src, \tgt, \tgt\cdot\src,\tgt\cdot\src\cdot\src, \tgt\cdot\src\cdot\tgt, \tgt\cdot\tgt, \tgt\cdot\tgt\cdot\src, \tgt\cdot\tgt\cdot\src\cdot\src, \tgt\cdot\tgt\cdot\src\cdot\tgt, \tgt\cdot\tgt\cdot\tgt\}$
+\end{example}
+
+Mittels der Pfade können wir nun angeben, welche Teiltypen innerhalb des filtrierten Typen $\rho=a\to e\to e \to a$ aus \Cref{ex:notsub} für den Term $\lambda x~y~z.x$ zusammengehören. Es sind nur die Typen, die zu der Variable $x$ gehören, also $\src$ und $\tgt\cdot\tgt\cdot\tgt$. Wir können hier auch sehen, dass dies auch in dem ungefilterten Typen $a\to(b\to c)\to (c\to d)\to a$ gilt, da Teiltypen von irrelevanten Typen zu keinem Teilterm des \tlambda-Terms gehören.
+
+Betrachten wir hier einmal den prinzipalen Typen $a\to b\to c\to a$ des Terms $\lambda x~y~z.x$, so stellen wir fest, dass genau die Pfade zusammengehören, die zu identischen Typen führen. Aufbauend auf dieser Beobachtung werden wir zunächst ein weiteres notwendiges Kriterium und danach ein hinreichendes Kriterium für die Prinzipalität aufstellen.
+
+Zunächst geben wir einen Kalkül an, das \tlambda-Terme mit Pfaden in Relation setzt. Dies wird uns eine Relation zwischen Pfaden liefern, die angibt, welche Teiltypen eines Typen für einen Term zusammengehören, also identisch sein müssen.
+
+\begin{definition}{Teilformelkalkül}{SfC}
+    Sei $\Delta\subseteq \Lambda\times\Pi$ ein Pfadkontext\footnote{Pfadkontexte sind analog zu Typkontexten definiert.}, $R\subseteq \Pi\times\Pi$ eine Relation zwischen Pfaden, $\pi,\pi'\in\Pi$ Pfade, $x\in\V$ eine Variable, und $M,M_1,\ldots,M_n\in\Lambda$ \tlambda-Terme. Dann definieren wir die Relation $\_\vdash_R\_ : \_$ anhand der folgenden Inferenzregeln.
+    \[\infer[\text{(abs)}_R]{\Delta\vdash_R \lambda x.M : \pi}{\Delta, x:\pi\cdot\src\vdash_R M : \pi\cdot\tgt}\]
+    \[\infer[\text{(varapp)}_R]{\Delta,x:\pi\vdash_R x~M_1\ldots M_n : \pi'}{(\pi\cdot\tgt^n,\pi')\in R &
+        \Delta, x:\pi\vdash_R M_i : \pi\cdot\tgt^{i-1} \text{ für }i=1\ldots n}\]  
+        
+    Analog zu \Cref{def:typing} nennen wir den Baum mit Wurzel $\Delta\vdash M : \pi$ Pfadableitung und wenn $\mathcal{D}_R$ eine Pfadableitung ist, schreiben wir $\mathcal{D}_R\judges\Delta\vdash M : \pi$.
+\end{definition}
+\begin{remark}
+    \begin{itemize}
+        \item  Wir nennen die Bedingungen in der Form $(\pi,\pi')\in R$ Nebenbedingungen. Auch wenn eine Relation $R$ hier als Eingabe für den Teilformelkalkül definiert ist, können wir zeigen, dass $R$ bestimmte Pfade in Relation setzen muss, damit ein Term $M$ erfolgreich dem Pfad $\varepsilon$ zugewiesen wird. $R$ ist somit abhängig von $M$.
+        \item Der Aufbau der Regeln von $\vdash_R$ ähnelt stark den Regeln (long) und (abs), die die $\eta$-langen Terme bestimmen. Diesen Zusammenhang werden wir uns in \Cref{lem:fz} zu Nutze machen.
+    \end{itemize}
+\end{remark}
+
+Betrachten wir den Aufbau von $\vdash_R$, so wird klar, dass zusätzliche Einträge in $R$ eine erfolgreiche Ableitung nicht fehlschlagen lassen. Dies bedeutet insbesondere, dass es für eine Ableitung $\vdash_R M : \varepsilon$ eine kleinste Menge $R'\subseteq R$ gibt, sodass $\vdash_{R'} M : \varepsilon$. Diese Menge ist für uns von Interesse, da sie genau die Pfade in Relation setzt, die in einem Typen, der $M$ typt, gleich sein müssen.
+
+\begin{lemma}{}{mono}
+    Falls $\vdash_R M:\varepsilon$ und $R\subseteq R'$, dann $\vdash_{R'} M : \varepsilon$
+    \Proof
+    Das einzige Vorkommen der Relation $R$ ist in der (varapp)$_R$ Regel in der Form $(\pi\cdot\tgt^n,\pi')\in R$. Es ist klar, dass aus $R\subseteq R'$ folgt, dass für alle $x\in R$, auch  $x\in R'$ gilt.
+\end{lemma}
+\begin{corollary}{}{miniR}
+    Falls $\vdash_R M:\varepsilon$, dann gibt es ein $R'\subseteq R$, sodass für jedes $R''$ mit $\vdash_{R''} M : \varepsilon$ gilt $R'\subseteq R''$.
+    \Proof
+    Aus \Cref{lem:mono} wissen wir, dass $\vdash_R$ monoton im Bezug auf die Teilmengenrelation zu $R$ ist. Demnach gibt es eine kleinste Pfadrelation $R'$, die Teilmenge jeder Pfadrelation $R''$ ist, die $\vdash R''$ für einen Term $M$ erfüllt.
+\end{corollary}
+
+Das folgende Lemma und das darauf aufbauende Korollar geben uns Einschränkungen an eine minimale Relation $R$, also an die Tupel in $R$, die für die Ableitung notwendig sind.
+
+\begin{lemma}{}{evenodd}
+    Falls $\mathcal{D}_R\judges\emptyset\vdash_R M : \varepsilon$, dann gilt für jeden Inferenzschritt $\Delta \vdash_R N:\pi$ in $\mathcal{D}_R$,
+    \begin{enumerate}[label=(\roman*)]
+        \item Die Anzahl an $\src$ in $\pi$ ist gerade.\label{lem:even1}
+        \item Für jedes $(x:\pi')\in\Delta$ ist die Anzahl an $\src$ in $\pi'$ ungerade.\label{lem:even2}
+    \end{enumerate}
+\Proofidea
+Wir zeigen die allgemeinere Aussage, wenn $\mathcal{D}_R\judges\Delta\vdash M : \pi$ und für $\pi$ bzw. $\Delta$ die Aussagen \ref{lem:even1} bzw. \ref{lem:even2} gelten, dann gelten sie in jedem Schritt in $\mathcal{D}$.
+
+\begin{description}
+    \item[Fall (abs)$_R$:] Falls $\pi$ eine gerade Anzahl an $\src$ und in $\Delta$ alle Pfade eine ungerade Anzahl an $\src$ haben, dann haben in $\Delta, x:\pi\cdot\src$ alle Pfade eine ungerade Anzahl an $\src$.
+    \item[Fall (varapp)$_R$:] Falls in $\Delta, x:\pi$ alle Pfade eine ungerade Anzahl an $\src$ haben, dann hat für alle $i$ der Pfad $\pi\cdot\tgt^{i-1}\cdot\src$ eine gerade Anzahl  an $\src$.
+\end{description}
+
+Sowohl $\ref{lem:even1}$ als auch $\ref{lem:even2}$ gelten für $\vdash_R M : \varepsilon$.
+\end{lemma}
+\begin{corollary}{}{norefl}
+    Falls $\mathcal{D}_R\judges\emptyset\vdash_R M :\varepsilon$, dann hat kein Inferenzschritt in $\mathcal{D}_R$ eine Nebenbedingung in der Form $(\pi, \pi)\in R$.    
+    \Proofidea
+    Folgt direkt aus \Cref{lem:evenodd}.
+\end{corollary}
+
+\begin{remark}
+    Dies bedeutet insbesondere, dass einmal vorkommende Typen nicht mit sich selbst in Relation stehen.
+\end{remark}
+
+\Cref{cor:miniR} folgend werden wir nun für eine Ableitung $\vdash_R M : \epsilon$ eine von $M$ abhängige minimale Relation $R$ angeben. Hierfür betrachten wir den \Cref{alg:rm}. 
+\begin{remark}
+    Der Algorithmus kann fehlschlagen. Da der Algorithmus rekursiv definiert ist, führt ein Fehlschlag irgendeines Kindaufrufs zum Fehlschlag des Elternaufrufs.
+\end{remark}
+
+\begin{algorithm}[t]
+    \DontPrintSemicolon
+    \KwData{Pfadkontext $\Delta$, Pfad $\pi'$, \tlambda-Term $M$ in \tbeta-Normalform}
+    \KwResult{Relation $R_M$ oder Fehlschlag}
+    \Switch{$M$}{
+        \Case{$M = \lambda x.P$}{\Return $R_M$-aux ($\Delta,x:\pi'\cdot\src$, $(\pi'\cdot\tgt)$, $P$)\;}
+        \Case{$M = x~M_1~\ldots~M_n$}{\eIf{$x\in\text{dom}{(\Delta)}$}{                
+                $\pi \leftarrow \Delta(x)$\;
+                $R\leftarrow \{(\pi\cdot\src^n,\pi')\}$\;
+                \For{$i\in[1\ldots n]$}
+                {
+                    $R\leftarrow R\cup R_m\text{-aux}(\Delta, (\pi\cdot\tgt^i\cdot\src), M_i)$\;
+                } 
+            \Return R\;
+            }{\Fail\;}}            
+    }    
+\caption{$R_M$-aux}
+\label{alg:rm}
+\end{algorithm}
+
+\begin{lemma}{}{rmclosed}
+    Wenn $M$ ein geschlossener \tlambda-Term in \tbeta-Normalform ist, dann schlägt $R_M\text{-aux}(\emptyset,\pi,M)$ nicht fehl.
+    \Proof
+    \Cref{alg:rm} schlägt nur fehl, wenn Kontext keinen Eintrag für eine benutzte Variable hat. Da beim Abarbeiten einer Abstraktion die Variable, über die abstrahiert wird, in den Kontext gelegt wird, und in einem geschlossenen Term über alle benutzten Variablen abstrahiert wird, schlägt \Cref{alg:rm} in diesem Fall nicht fehl.
+\end{lemma}
+    
+\begin{definition}{}{rm}
+    Gegeben ein geschlossener \tlambda-Term $M$ in \tbeta-Normalform, dann ist $R_M$ die kleinste transitiv-symmetrische Relation, sodass $\vdash_{R_M} M : \varepsilon$.
+\end{definition}
+\begin{remark}
+    In \cite{dudenhefner} wird an dieser Stelle ein Äquivalenzabschluss gefordert, wir kommen hier damit aus, nur Transitivität und Symmetrie zu fordern. Die Eigenschaft der Reflexivität führt insbesondere zu Problemen, wenn wir die Eigenschaft $(\star)$ (\Cref{def:star}) betrachten.
+    
+    Nach Rücksprache mit Andrej Dudenhefner -- einem der Autoren von \cite{dudenhefner} -- stellt sich heraus, dass eine Art von \emph{innerer} Reflexivität gemeint ist, sodass ein Pfad bereits in einem Tupel vorkommen muss, um im Abschluss vorhanden zu sein,
+    \[(a,b)\in R \implies (a,a)\in R \land (b,b)\in R.\]
+    Dies wird jedoch vollständig von dem transitiv-symmetrischen Abschluss überdeckt. Siehe hierzu den entsprechenden Beweis in \Cref{ch:coq}.
+\end{remark}
+\begin{notation}
+    Wir schreiben $R^{ts}$ für den transitiv-symmetrischen Abschluss der Relation $R$.
+\end{notation}
+\begin{lemma}{}{rmauxcorrect}
+    $R_M\text{-aux}(\emptyset, \varepsilon, M)^{ts}$ aus \Cref{alg:rm} erfüllt \Cref{def:rm}.
+    \Proofidea
+    Der Algorithmus arbeitet die Inferenzregeln in \Cref{def:SfC} rückwärts ab. An dieser Stelle wird auch auf eine genauere Beweisidee verzichtet und auf das \Cref{ex:rm} verwiesen.
+    %Ein formaler Beweis ist 
+    %Für einen formalen Beweis, siehe den entsprechenden Beweis in \Cref{ch:coq}.
+\end{lemma}
+\newcommand{\RMaux}{\ensuremath{R_M\text{-aux}}}
+\begin{example}{}{rm}
+    Sei $M=\lambda x~y~z.x$. Dann ist $R_M$ der transitiv-symmetritische Abschluss von $\RMaux(\emptyset, \varepsilon, M)$, und    
+    \begin{align*}
+    \RMaux(\emptyset, \varepsilon, M) &= \RMaux(\{x:\src\}, \tgt, \lambda y~z.x) \\
+    &=\RMaux(\{x:\src, y:\tgt\cdot\src\}, \tgt^2, \lambda z.x)\\
+    &=\RMaux(\{x:\src, y:\tgt\cdot\src, z:\tgt^2\cdot\src\}, \tgt^3, x) \\
+    &= \{(\src, \tgt\cdot\tgt\cdot\tgt)\}\\
+    & \text{ mit } n = 0, \pi \leftarrow \src, R\leftarrow \{(\src, \tgt\cdot\tgt\cdot\tgt)\}, 
+    \end{align*}           
+    
+    und es gilt die folgende Ableitung:
+    
+    \[\infer[\abs_{R_M}]{\vdash_{R_M} \lambda x~y~z.x : \varepsilon}{
+        \infer[\abs_{R_M}]{x:\src\vdash_{R_M} \lambda y~z.x:\tgt}{
+            \infer[\abs_{R_M}]{x:\src, y:\tgt\cdot\src\vdash_{R_M}\lambda z.x:\tgt\cdot\tgt}{
+                \infer[\varapp_{R_M}]{x:\src, y:\tgt\cdot\src, z:\tgt\cdot\tgt\cdot\tgt\vdash_{R_M} x: \tgt\cdot\tgt\cdot\tgt}{(\src,\tgt\cdot\tgt\cdot\tgt)\in R_M}
+        }}}    
+    \]    
+\end{example}
+
+\Cref{ex:rm} zeigt, wie \Cref{alg:rm} und die Regeln aus \Cref{def:SfC} entgegengesetzt laufen.
+
+Wir haben nun einen Algorithmus, der anhand eines Terms über Pfade in Typen, die zu dem Term gehören, angibt, welche Positionen dort zusammengehören. Wir benötigen nun eine analoge Definition für Teiltypen in einem Typen. Da wir hier einen Typ direkt vorliegen haben, benötigt es keinen weiteren Kalkül und keinen Algorithmus, um zu entscheiden, welche Teiltypen innerhalb eines Typen identisch sind.
+
+\begin{definition}{}{rt}
+    Gegeben ein Typ $\tau$, dann ist die transitiv-symmetrische Relation $R_\tau$ wie folgt definiert.
+    \[R_\tau=\{(\pi,\pi')\mid \pi\neq\pi' \land P_\tau(\pi)=P_\tau(\pi')\in\At\}^{ts}\]
+\end{definition}
+\begin{remark}
+    \begin{itemize}
+        \item Die Einschränkung $\pi\neq\pi'$ verhindert, dass Typen, die nur einmal in einem Typen vorkommen, in unsere Relation aufgenommen werden. Dies ist eine wichtige Einschränkung für $(\star)$.
+        \item Auch hier verwenden wir analog zu \Cref{def:rm} und im Gegensatz zu \cite{dudenhefner} den transitiv-symmetrischen Abschluss, da auch hier die \emph{innere} Reflexivität ausreicht. Die vollständige Reflexivität würde sogar im Bezug auf \Cref{def:star} diese Bedingung zu einer Tautologie machen.
+    \end{itemize}    
+\end{remark}
+\begin{example}{}{rt}
+    \begin{enumerate}
+        \item $R_{a\to e\to e\to a} = \{(\src, \tgt\cdot\tgt\cdot\tgt), (\tgt\cdot\src, \tgt\cdot\tgt)\}^{ts}$
+        \item $R_{a\to (b\to c)\to(c\to d)\to a} = \{(\src, \tgt\cdot\tgt\cdot\tgt),(\tgt\cdot\src\cdot\tgt,\tgt\cdot\tgt\cdot\src\cdot\src)\}^{ts}$
+        \item $R_{a\to b\to c\to a} = \{(\src, \tgt\cdot\tgt\cdot\tgt)\}^{ts}$
+    \end{enumerate}
+\end{example}
+
+Wir können beobachten, dass $a\to b\to c\to a$, der prinzipale Typ von $\lambda x~y~z.x$, die gleiche Pfadrelation induziert wie der Term $\lambda x~y~z.x$ selbst. Diese Beobachtung werden wir mit den nachfolgenden Lemmata formalisieren und zu einer notwendigen Bedingung für die prinzipale Inhabitation erweitern.
+
+Betrachten wir die Ableitungsregeln in \Cref{def:SfC} und \Cref{def:longtype}, so stellen wir eine strukturelle Ähnlichkeit fest. Beide Definitionen erlauben als \tlambda-Terme entweder ein Abstraktion, oder eine Kette an Applikationen, die mit einer Variable beginnt. Wir nutzen nun diesen Zusammenhang, um $R_M$ und $R_\tau$ in Relation zu setzen.
+
+\begin{lemma}{}{fz}
+Gegeben ein \tlambda-Term $M$ in \tbeta-Normalform und Typ $\tau$, dann sind die folgenden Aussagen äquivalent.
+\begin{enumerate}
+    \item $M\in \text{Long}(\tau)$\label{lem:fz1}
+    \item $\vdash_{R_\tau} M :\varepsilon$ \label{lem:fz2}
+    \item $R_M\subseteq R_\tau$ \label{lem:fz3}
+\end{enumerate}
+\Proofidea
+\begin{description}
+    \item[\ref{lem:fz1} $\implies$ \ref{lem:fz2}:] Nach \Cref{lem:longcorrect} gilt $\vdash: M :\tau$. Daraus folgt, dass $M$ ein geschlossener Term ist. Es gibt somit ein $R_M$, sodass $\vdash_{R_M} M : \varepsilon$. Aufgrund der Ähnlichkeit der Langableitung und des Teilformelkalküls können wir durch Induktion über die Langableitung feststellen, dass für jeden Schritt $\Delta\vdash_{R_M} M : \pi$ in der Pfadableitung es einen Schritt $\{x : P_\tau(\pi') \mid (x : \pi')\in\Delta\}\vdash M : P_\tau(\pi)$ in der Langableitung gibt.
+    
+    Für einen Schritt in der Form \[\hspace{-1cm}\infer[\varapp_{R_M}]{\Delta, x:\pi\vdash_{R_M} x~M_1~\ldots~M_2 : \pi'}{(\pi\cdot\tgt^n, \pi')\in R_M & \Delta,x:\pi\vdash_{R_M} M_i : \pi\cdot\tgt^{i-1} \text{ für } i=1\ldots n}\] folgt aus der Langableitung, dass $P_\tau(\pi')\in\At$ und, da $R_M$ die notwendigen Gleichheiten in den Typen für $M$ beinhaltet, dass $P_\tau(\pi\cdot\tgt^n) = P_\tau(\pi')$. Da weiterhin gilt, dass kein $(\pi,\pi)\in R_M$ als Nebenbedingung vorkommt, wissen wir, dass $\pi\cdot\tgt^n\neq\pi'$. Damit erfüllt $(\pi\cdot\tgt^n,\pi')$ alle Bedingungen für $R_\tau$. Da alle verwendeten Tupel aus $R_M$ in $R_\tau$ vorkommen, gilt auch $\vdash_{R_\tau} M : \varepsilon$.
+    \item[\ref{lem:fz2} $\implies$ \ref{lem:fz3}:] $R_M$ ist die minimale Relation $R$, die $\vdash_R M : \varepsilon$ erfüllt. Also ist sie Teilmenge aller dieser Relationen, insbesondere auch $R_\tau$.
+    \item[\ref{lem:fz3} $\implies$ \ref{lem:fz1}:] Nehmen wir an, dass $R_M\subseteq R_\tau$. Es ist klar, dass, falls $R_M$ existiert, es eine Ableitung $\vdash_{R_M} M : \varepsilon$ gibt. Wir können die ähnliche Struktur der Pfad- und Langableitungen ausnutzen, um aus der Ableitung zu $\vdash_{R_M} M : \varepsilon$ eine Langableitung zu erhalten. 
+    Wir können \varapp$_{R_M}$-Regeln übersetzen, da aus $(\pi\cdot\tgt^2, \pi')\in R_\tau$ folgt, dass $P_\tau(\pi\cdot\tgt^2) = P_\tau(\pi') \in\At$. Des Weiteren können wir $\abs_{R_M}$-Regeln übersetzen, da falls $\pi\cdot\tgt\in\dom(P_\tau)$, auch $\pi\cdot\src\in\dom(P_\tau)$.
+\end{description}
+Wir werden in \Cref{ch:coq} genauer auf die Konstruktionen der einzelnen Schritte eingehen.
+\end{lemma}
+
+Bevor wir das notwendige Kriterium für die Prinzipalität beweisen können, muss ein weiteres Lemma aufgestellt werden, das es uns erlaubt für einem Term $M\in\Long(\tau)$, atomare Typen zu ersetzen, sofern wir diese an allen Stellen ersetzen, die über $R_M$ in Relation stehen.
+
+\begin{lemma}{}{necaux}
+    Gegeben ein \tlambda-Term $M\in\text{Long}(\tau)$ und $\pi\in\dom(P_\tau)$, sodass $P_\tau(\pi) = a\in\At$. Sei $b$ ein frisches Atom, dann sei $\tau'$ definiert über den Typen $\tau$, in dem jeder Teiltyp, der durch den Pfad $\pi'\in\dom(P_\tau)$ mit $\pi = \pi'$ oder $(\pi,\pi')\in R_M$ bestimmt wird, durch $b$ ersetzt wird. Dann ist $M\in\Long(\tau')$.
+    \Proofidea
+    Falls $M\in\Long(\tau)$ wissen wir über \Cref{lem:fz}, dass $R_M\subseteq R_\tau$. Wenn wir in $\tau$ eine Variable $a$ an Stelle $\pi$ und an allen Stellen $\pi'$, für die gilt $(\pi,\pi')\in R_M$, durch $b$ ersetzen, dann ist auch $(\pi, \pi') \in R_{\tau'}$, da $P_\tau'(\pi) = P_\tau'(\pi') = b$. Damit gilt $R_M\subseteq R_{\tau}'$ und nach \Cref{lem:fz} auch $M\in\Long(\tau')$.
+\end{lemma}
+
+Nun können wir die durch \Cref{ex:rt} aufgestellte Intuition formalisiert, nach der für einen prinzipalen Typen $\tau$ zu einem Term $M$, die Menge $R_\tau$ und die Menge $R_M$ identisch sein müssen. Die atomaren Teiltypen von $\tau$ erfüllen somit die durch die Pfade in $R_M$ aufgestellte Gleichheit.
+
+\begin{lemma}{}{princnec}
+    Gegeben ein Typ $\tau$, sei $M\in\text{Long}(\tau)$. Falls $\tau$ der prinzipale Typ von $M$ ist, dann gilt $R_\tau=R_M$.
+    \Proofidea
+    Wir wissen, dass $R_\M\subseteq R_\tau$, da $M\in\Long(\tau)$. Es bleibt zu zeigen, dass $R_\tau \subseteq R_M$. 
+    
+    Nehmen wir das Gegenteil an, nämlich dass es ein $(\pi, \pi')\in R_\tau$ gibt, welches nicht in $R_M$ liegt. Wir wissen, dass $P_\tau(\pi) \in\At$. Wir wählen nun ein $a$, das ein frisches Typatom für $\tau$ ist, und konstruieren analog zu \Cref{lem:necaux} ein $\tau'$, indem wir $P_\tau(\pi)$ durch $a$ ersetzen. Da $P_\tau(\pi)\in\At$ gilt nach \Cref{lem:necaux}, dass $M\in\Long(\tau')$. Da $(\pi,\pi')\notin R_M$, wurde der Typ an der Stelle $\pi'$ nicht ersetzt. Es gibt somit keine Substitution von $\tau$ zu $\tau'$. Damit kann $\tau$ nicht der prinzipale Typ sein.
+\end{lemma}
+
+Die Umkehrung, dass, falls $R_M = R_\tau$ gilt $\tau$ prinzipal zu $M$ ist, gilt jedoch nicht zwangsläufig. Betrachten wir hierzu das folgende Beispiel.
+
+\begin{example}{}{}
+    Sei $M=\lambda x~y.x$ und $\tau = a\to(b\to c)\to a$. Es gilt $R_M = \{(\src,\tgt\cdot\tgt\} = R_\tau$, aber $\tau$ ist nicht der prinzipale Typ von $M$. Genauer hat $\tau$ keinen prinzipalen Inhabitanten.
+\end{example}
+
+Ein Problem ist hierbei, dass wir zwar über $R_M$ wissen, welche Typen in $\tau$ identisch sein müssen, aber keine Aussage über einzeln vorkommende Typen in $\tau$ treffen. Diese sind weder in $R_M$, noch in $R_\tau$ referenziert, und können demnach beliebig spezifisch sein.
+
+Es ist klar, dass, wenn alle nicht durch $R_M$ gebundene Teiltypen von $\tau$ atomare Typen sind und $R_M = R_\tau$, dann ist $\tau$ prinzipal zu $M$. Wir können diese Beobachtung sogar noch verallgemeinern, indem wir folgendes betrachten. Jeder nichtatomare Typ $\sigma'\to\tau'$ endet in einem Teiltypen der Form $\sigma\to a$, mit $a\in\At$. Weiter ist klar, dass, wenn ein Typatom $a$ nur als Zieltyp in $\sigma\to a$ vorkommt, ein Term $M$ mit diesem Typen niemals über eine Variable mit dem Typen $a$ abstrahiert.
+
+Wenn $a$ nur einmal in $\tau$ vorkommt, wissen wir, dass es für jeden geschlossenen Term $M$, für den gilt $\vdash M: \tau$, keine Variable mit dem Typen $a$ gibt. Da $a$ auch im Resttypen nicht genutzt wird, wissen wir, dass innerhalb eines solchen Term $M$ ein Teilterm vom Typen $a$ niemals als Eingabe benutzt wird. $a$ ist somit ein irrelevanter Typ für eine Ableitung $\vdash M : \tau$ nach \Cref{def:TD}.
+
+Die hier beschriebene Bedingung lässt sich als Bedingung $(\star)$ mit der folgenden Definition formalisieren.
+
+\begin{definition}{$(\star)$}{star}
+    Wir sagen, ein Typ $\tau$ erfüllt $(\star)$, falls $\forall \pi\in\dom(P_\tau).(P_\tau(\pi\cdot\tgt)\in\At\implies (\pi\cdot\tgt,\pi\cdot\tgt)\in R_\tau)$.
+\end{definition}
+
+Mittels $(\star)$ können wir nun eine notwendige Bedingung für die prinzipale Inhabitation formulieren.
+
+\begin{lemma}{}{}
+    Falls $\tau$ nicht $(\star)$ erfüllt, dann hat $\tau$ keine normalen prinzipalen Inhabitanten.
+    \Proof
+    Nehmen wir an, dass $\tau$ die Bedingung $(\star)$ nicht erfüllt. Dann existiert ein Pfad $\pi\in\dom(\tau)$, sodass $P_\tau(\pi\cdot\tgt)\in\At$, aber $(\pi\cdot\tgt,\pi\cdot\tgt)\notin R_\tau$. Nehmen wir weiter an, dass $\tau$ einen normalen prinzipalen Inhabitanten hat. Es gibt damit auch einen normalen prinzipalen Inhabitanten in \teta-langer Normalform $M\in \Long(\tau)$. 
+    
+    Nach \Cref{lem:fz} gibt es eine Ableitung $\mathcal{D}_{R_\tau}\judges\emptyset\vdash_{R_\tau} M :\varepsilon$. Da $(\pi\cdot\tgt,\pi\cdot\tgt)\notin R_\tau$, kommt aufgrund der inneren Reflexivität in $R_\tau$ nirgendwo ein $\pi\cdot\tgt$ vor. Somit gibt es in $\mathcal{D}_{R_\tau}$ keinen Schritt der Form $\Delta\vdash_{R_\tau} x~M_1~\ldots~M_n:\pi\cdot\tgt$ für irgendeinen Kontext $\Delta$ und Applikation $x~M_1\ldots M_n$. 
+    
+    Da $P_\tau(\pi\cdot\tgt)\in\At$, liegt $\pi\cdot\tgt\cdot\src$ bzw. $\pi\cdot\tgt\cdot\tgt$ nicht in der Menge $\dom(P_\tau)$. Daraus folgt, dass kein Schritt $\Delta'\vdash_{R_M} \lambda x.P : \pi\cdot\tgt$ für irgendein $\Delta'$ und irgendein $\lambda x.P$ in $\mathcal{D}_{R_\tau}$ vorkommt. 
+    
+    Übersetzt man die Ableitung zu einer Langableitung $\mathcal{D}'\judges\emptyset\vdash M:\tau$, wissen wir, dass auch dort kein Schritt in der Form $\Gamma\vdash N:P_\tau(\pi\cdot\tgt)$ vorkommt. Somit enthält $\tau$ einen Teiltypen $P_\tau(\pi) = \sigma\to a$ für $P_\tau(\pi\cdot\src)=\sigma$ und $P_\tau(\pi\cdot\tgt) = a$, und $a\notin T(\mathcal{D})$. Damit ist nach \Cref{lem:filtrprinc} $\tau$ nicht der prinzipale Typ von $M$. Dies ist ein Widerspruch zu unserer Annahme.
+\end{lemma}
+
+Abschließend können wir die Bedingung $(\star)$ nutzen, um eine hinreichende Bedingung für die Prinzipalität formulieren.
+
+\begin{lemma}{}{princsuff}
+Gegeben ein Typ $\tau$, der $(\star)$ erfüllt, sei $M\in\text{Long}(\tau)$. Falls $R_\tau = R_\M$, dann ist $\tau$ der prinzipale Typ von $M$.
+\Proof
+Nehmen wir an, das $\tau$ nicht prinzipal für $M$ ist, also es einen prinzipalen Typen $\tau'$ mit $\tau'\prec \tau$ gibt. Sei $Su$ die Substitution, die $\tau'$ auf $\tau$ abbildet. Wir wissen durch \Cref{lem:longsubst}, dass $M\in\Long(\tau')$ und über \Cref{lem:princnec}, dass $R_M = R_{\tau'}$. Wir zeigen nun, dass $R_\tau \neq R_\tau'$ und damit auch $R_\tau\neq R_M$. Nach \Cref{lem:nonsubst} wissen wir, dass wir genau zwei Fälle für $Su$ untersuchen müssen.
+\begin{description}
+    \item[Fall, $Su$ ist eine Umbenennung:] Da es keine $Su^{-1}$ gibt, die $\tau$ auf $\tau'$ abbildet, muss $Su$ zwei in $\tau'$ vorkommende, verschiedene Typatome auf dasselbe Typatom in $\tau$ abbilden. Also gibt es zwei Pfade $\pi,\pi'$, sodass $P_{\tau'}(\pi)\in\At\neq P_{\tau'}(\pi')\in\At$, aber $P_\tau(\pi) = P_\tau(\pi')\in\At$. Es gilt somit $(\pi,\pi')\in R_\tau$, aber $(\pi,\pi')\notin R_\tau'.$
+    \item[Fall, $Su$ bildet ein Typatom auf einen Funktionstypen ab:] Sei $\sigma_1\to\ldots\to\sigma_n\to b$ mit $n > 0$ der Funktionstyp und $a\in\At$ das Typatom. Wenn $\pi\in\dom(\tau')$ mit $P_{\tau'}(\pi) = a$, dann ist auch $P_{\tau}(\pi) = \sigma_1\to\ldots\sigma_n\to b$ und $P_\tau(\pi\cdot\tgt^n) = b$.
+    Da $\tau$ die Bedingung $(\star)$ erfüllt wissen wir, dass $(\pi\cdot\tgt^n,\pi\cdot\tgt^n)\in R_{\tau}$. Da $P_{\tau'}(\pi) \in\At$ wissen wir, dass $(\pi\cdot\tgt^n, \pi\cdot\tgt^n)\notin R_\tau$.
+\end{description}
+\end{lemma}
+
+Der Vorteil der Charakterisierung der Prinzipalität über $(\star)$ ist, dass sich die Bedingung einfach und automatisiert prüfen lässt. 
+
+Wir können nun ein Theorem aufstellen, das zeigt, dass ein Typ genau dann prinzipal zu einem Term ist, wenn er $(\star)$ erfüllt und genau die Gleichheiten in seinen Typatomen erfüllt, die über den Aufbau des Terms vorgegeben sind.
+
+\begin{theorem}{}{}
+    Gegeben ein Typ $\tau$, der $(\star)$ erfüllt und ein \tlambda-Term $M\in\text{Long}(\tau)$, dann ist $\tau$ genau dann der prinzipale Typ von $M$, wenn $R_M = R_\tau$.
+    \Proof    
+    \begin{description}
+        \item[$\implies$] \Cref{lem:princnec}
+        \item[$\impliedby$] \Cref{lem:princsuff}
+    \end{description}
+\end{theorem}    
