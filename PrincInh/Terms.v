@@ -8,6 +8,7 @@ Require Import Coq.Lists.ListSet.
 Require Import Coq.Classes.EquivDec.
 Require Import Coq.Bool.Sumbool.
 Require Import Coq.Classes.DecidableClass.
+Require Import Lia.
 
 Require Import PrincInh.Utils.
 
@@ -272,11 +273,11 @@ Proof.
   intros.
   revert x.
   induction ms using rev_ind.
-  - simpl. firstorder.
+  - cbn. lia.
   - intros. rewrite app_comm_cons.
     repeat rewrite curry_tail.
     repeat rewrite term_app_split.
-    firstorder.
+    cbn. cbn in IHms. apply Le.le_n_S. apply Plus.plus_le_compat_r. exact (IHms x0).
 Qed.
 
 Lemma curry_le_last : forall ms x a, term_length (curry x ms) <= term_length (curry x (ms ++ [a])).
@@ -284,7 +285,7 @@ Proof.
   intros.
   revert x.
   induction ms.
-  - simpl. firstorder.
+  - intros. cbn. lia.
   - intros. simpl. apply IHms.
 Qed.
 
@@ -304,7 +305,7 @@ Lemma curry_le : forall x ms n, term_length (curry x ms) <= n ->
         intros.
         eapply H0. assumption.
       + inversion H2.
-        { subst. rewrite curry_tail. simpl. firstorder. }
+        { subst. rewrite curry_tail. cbn. lia. }
         { ainv. }
   Qed.
 

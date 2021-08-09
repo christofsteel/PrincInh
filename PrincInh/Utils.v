@@ -3,7 +3,7 @@ Require Import Coq.Relations.Relation_Operators.
 Require Import Coq.Lists.List.
 Require Import Coq.omega.Omega.
 Require Import Datatypes.
-Require Import Omega.
+Require Import Lia.
 
 Import ListNotations.
 Import EqNotations.
@@ -50,7 +50,7 @@ Proof.
   rewrite count_occ_split.
   simpl.
   destruct (eq_dec y x) eqn:Heq.
-  - firstorder.
+  - rewrite Nat.add_1_r. reflexivity.
   - firstorder.
 Qed.
 
@@ -525,7 +525,7 @@ Proof.
     + intros. assert (length ms = length ns).
       { apply app_eq_length_eq in H. rewrite rev_length in H. rewrite rev_length in H. assumption. }
       assert (1 <= length ms).
-      { rewrite <- Heqlms. firstorder. }
+      { rewrite <- Heqlms. lia. }
       assert (1 <= length ns). { rewrite <- H0. assumption. }
       apply  l1_le_length_split in H1.
       apply  l1_le_length_split in H2.
@@ -2061,7 +2061,7 @@ Proof.
         erewrite nth_ok_proof_irel.
         erewrite (nth_ok_proof_irel _ ls').
         apply IHls. Unshelve.
-        ** firstorder.
+        ** cbn in pr. lia.
         ** assumption.
 Qed.
 

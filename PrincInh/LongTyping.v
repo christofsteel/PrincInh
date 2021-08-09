@@ -8,6 +8,8 @@ Require Import PrincInh.Typing.
 Require Import PrincInh.NFTerms.
 Require Import PrincInh.Utils.
 
+Require Import Lia.
+
 Import ListNotations.
 Import EqNotations.
 
@@ -175,7 +177,7 @@ Lemma long_general_T : forall m Su rho Gamma,
 Proof.
   intros m.
   remember (term_length m) as lengthm.
-  assert (term_length m <= lengthm). { firstorder. }
+  assert (term_length m <= lengthm). { lia. }
   clear Heqlengthm.
   revert m H.
   induction (lengthm).
@@ -209,7 +211,7 @@ Proof.
         - ainv. constructor.
         - intros. ainv. constructor.
           + apply IHn with Su. 
-            { ainv. firstorder. }
+            { ainv. lia. }
             { assumption. }
             { assumption. }
           + eapply IHms.
@@ -221,7 +223,7 @@ Proof.
     + inversion X0. symmetry in H2. apply subst_arr_is_arr_or_T in H2 as [Harr | Hvar].
       { destruct Harr as [st [st0 [Htau [HstSu Hst0su]]]]. 
         rewrite Htau. constructor. apply IHn with Su.
-        - simpl in H. firstorder.
+        - simpl in H. lia.
         - inversion X. rewrite Htau in H0. ainv.
         - rewrite <- HstSu in X1. rewrite subst_repo_cons in X1. rewrite Hst0su.
           assumption.
