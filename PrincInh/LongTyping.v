@@ -165,6 +165,8 @@ Proof.
 Qed.
 
 
+|-
+
 Lemma long_ty_lam_aux_T : forall m Gamma, { s & { t & long_ty_T (s :: Gamma) m t  } } ->
   { t0 & long_ty_T Gamma (\_ m) t0}.
 Proof.
